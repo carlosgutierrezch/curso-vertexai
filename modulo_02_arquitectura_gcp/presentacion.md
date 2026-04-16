@@ -1,11 +1,25 @@
 # Módulo 2: Arquitectura Actual de Datos en Google Cloud Platform
 
 ## Información de la sesión
-- **Sesión:** 2
-- **Fecha:** Lunes 20 de Abril, 16:00–18:00
-- **Duración:** 2 horas
-- **Audiencia:** Ingenieros y analistas de datos avanzados
-- **Prerequisitos:** Módulo 1 completado (contexto de People Analytics)
+- **Sesión:** 1 (segunda parte — se imparte junto con el Módulo 1)
+- **Fecha:** Lunes 20 de Abril, 2026, 16:00–18:00
+- **Tiempo asignado al Módulo 2:** ~60 minutos (temas 2.1–2.6 en vivo)
+- **Audiencia:** Ingenieros y analistas de datos avanzados (equipo de People Analytics)
+- **Prerequisitos:** Módulo 1 completado en la misma sesión
+- **Estructura de la sesión:** Presentación del Curso → Tema 1 → Tema 2 → Test de Conceptos → Feedback Individual
+- **Notebook práctico:** Módulo 2 notebook — INFORMATION_SCHEMA, Cloud Storage, BigLake, IAM, Analytics Hub, dev/test/prod
+
+> **Nota:** Este documento contiene todo el contenido del Módulo 2 (temas 2.1–2.12). En la sesión en vivo se cubren los temas 2.1–2.6 según la distribución acordada. Los temas 2.7–2.12 sirven como referencia complementaria.
+
+### Temas en vivo (Sesión 1):
+| Tema | Contenido | Tiempo |
+|------|-----------|--------|
+| 2.1 | Separación entre entornos: desarrollo, test y producción | 10 min |
+| 2.2 | Data Lake vs Data Warehouse en GCP | 10 min |
+| 2.3 | Control de costes en arquitecturas analíticas | 10 min |
+| 2.4 | Diseño orientado a escalabilidad y mantenibilidad | 10 min |
+| 2.5 | BigLake para extender las capacidades de BigQuery a data lakes externos | 10 min |
+| 2.6 | Analytics Hub para compartir datasets de forma segura | 10 min |
 
 ---
 
@@ -131,8 +145,8 @@ DATASET = os.environ.get("BQ_DATASET", f"people_analytics_{ENV}")
 **Regla de oro:** Los datos de producción de empleados **nunca** se copian a dev o staging sin anonimización previa. Usar `faker` o técnicas de *differential privacy* para generar datos de prueba.
 
 ### Aplicación en People Analytics
-- En dev/staging se trabaja con el dataset sintético de 2.000 empleados generado en el Módulo 1.
-- En producción, los datos reales de RRHH provienen del HRIS y se cargan mediante pipelines automatizados.
+- En dev/staging se trabaja con datos anonimizados y subconjuntos reducidos (en el notebook de clase: 50 empleados en dev, 209 en prod).
+- En producción, los datos reales de RRHH provienen del HRIS (Personio) y se cargan mediante pipelines automatizados (como el pipeline Personio → BigQuery implementado con Devoteam).
 - El acceso a producción se limita a service accounts y a un grupo reducido de administradores.
 
 ---
@@ -717,6 +731,23 @@ Equipo de datos (publisher)          RRHH (subscriber)            Finanzas (subs
 - Publicar datasets Gold curados para que RRHH, Finanzas y Dirección los consuman sin acceder a datos raw.
 - Compartir benchmarks salariales anonimizados con otras filiales de la organización.
 - Controlar quién tiene acceso a qué métricas: RRHH ve rotación y clima, Finanzas ve coste laboral, Dirección ve todo.
+
+---
+
+## Conexión con el notebook práctico
+
+El notebook del Módulo 2 aplica estos conceptos de forma práctica:
+
+| Tema de presentación | Sección del notebook |
+|---------------------|---------------------|
+| 2.1 Organización por proyectos | §2 Exploración con INFORMATION_SCHEMA |
+| 2.2 Separación dev/test/prod | §8 Datasets _dev con labels |
+| 2.6 Data Lake vs Data Warehouse | §3 Cloud Storage como Data Lake |
+| 2.9 Control de costes | §5 Auditoría de jobs y costes |
+| 2.10 Escalabilidad | §2 Particionado y clustering |
+| 2.11 BigLake | §4 Tablas externas sobre Parquet |
+| 2.12 Analytics Hub | §7 Exchange y Listing |
+| 2.8 IAM | §6 Permisos por dataset y vistas autorizadas |
 
 ---
 

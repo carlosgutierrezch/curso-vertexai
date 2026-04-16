@@ -9,21 +9,28 @@
 **Google Cloud Platform y Vertex AI**
 **para Analistas de Datos Avanzados**
 
+Sesión 1 — Lunes 20 de Abril, 2026
+
 Módulo 1: Contexto Real de Analítica de Datos en People Analytics
 
 *[Logo GCP + Vertex AI]*
 
 ---
 
-## Slide 2 — Agenda del día
+## Slide 2 — Agenda de la Sesión 1
 
-| Bloque | Tema | Duración |
-|--------|------|----------|
-| 1 | El dato de personas: qué lo hace diferente | 20 min |
-| 2 | Casos reales y aplicaciones | 25 min |
-| 3 | Marco regulatorio y ético | 20 min |
-| 4 | Organización y madurez | 15 min |
-| 5 | Q&A y discusión | 30 min |
+| Tema | Contenido | Tiempo |
+|------|-----------|--------|
+| — | Presentación del curso, objetivos y dinámica | 10 min |
+| **Tema 1** | **Contexto Real de Analítica de Datos en People Analytics** | 30 min |
+| 1.1 | Sesgos algorítmicos en datos de personas | 15 min |
+| 1.2 | Madurez analítica en departamentos de People Analytics | 15 min |
+| **Tema 2** | **Arquitectura Actual de Datos en GCP** | 60 min |
+| 2.1–2.6 | Entornos, Data Lake vs DW, costes, BigLake, Analytics Hub | 60 min |
+| — | Test de Conceptos | 10 min |
+| — | Feedback Individual | 10 min |
+
+> Notas del presentador: El Módulo 1 tiene contenido extenso de referencia (sensibilidad, tipologías, GDPR, casos reales). En la sesión en vivo nos enfocamos en sesgos y madurez. Los alumnos tienen acceso al material completo como referencia.
 
 ---
 
@@ -322,25 +329,30 @@ Responde Sí o No:
 
 ---
 
-## Slide 21 — Preview: Módulo 2
+## Slide 21 — Notebook práctico: lo que hacemos hoy
 
-**Lo que viene:**
-- Configuración del entorno en GCP
-- BigQuery como base de datos analítica
-- Primeros pasos en Vertex AI Workbench
-- Notebook práctico con datos sintéticos de People Analytics
+**Módulo 1 — Notebook (datos reales anonimizados de Personio):**
+- Entorno híbrido Vertex AI Workbench / local
+- Arquitectura Medallion: Bronze → Silver → Gold en BigQuery
+- Ingesta de 209 empleados, 117 columnas desde Personio HRIS
+- Métricas PA: brecha salarial, compa-ratio, k-anonimidad, proxy discrimination
+
+**Módulo 2 — Notebook (arquitectura GCP):**
+- INFORMATION_SCHEMA: explorar esquemas, particiones, costes
+- Cloud Storage como Data Lake + BigLake (tablas externas)
+- IAM y vistas autorizadas + Analytics Hub
+- Separación dev/test/prod con labels
 
 *¡Manos al teclado!*
 
 ---
 
-## Slide 22 — Q&A
+## Slide 22 — Test de Conceptos + Feedback
 
-**Preguntas para la discusión:**
+**Test de Conceptos (10 min):**
+- Preguntas sobre sesgos algorítmicos, madurez, arquitectura GCP, medallion, BigLake
 
+**Feedback Individual (10 min):**
 - ¿Qué nivel de madurez analítica tenéis?
-- ¿Habéis tenido un "incidente de datos" con datos de empleados?
-- ¿Cómo gestionáis el equilibrio insight vs. privacidad?
 - ¿Qué caso de uso os parece más accionable para empezar?
-
-*30 minutos de discusión abierta*
+- ¿Cómo gestionáis el equilibrio insight vs. privacidad?

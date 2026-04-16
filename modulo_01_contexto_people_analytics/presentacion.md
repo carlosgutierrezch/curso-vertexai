@@ -1,9 +1,15 @@
 # Módulo 1: Contexto Real de Analítica de Datos en People Analytics
 
 ## Información de la sesión
-- **Duración total:** 2 horas (90 min contenido + 30 min Q&A)
-- **Audiencia:** Analistas de datos avanzados
+- **Sesión:** 1 (Presentación + Módulo 1 + Módulo 2)
+- **Fecha:** Lunes 20 de Abril, 2026, 16:00–18:00
+- **Tiempo asignado al Módulo 1:** ~30 minutos (temas 1.1 y 1.2 en vivo)
+- **Audiencia:** Ingenieros y analistas de datos avanzados (equipo de People Analytics)
 - **Plataforma:** Google Cloud Platform / Vertex AI
+- **Estructura de la sesión:** Presentación del Curso → Tema 1 → Tema 2 → Test de Conceptos → Feedback Individual
+- **Notebook práctico:** Módulo 1 notebook — datos reales anonimizados de Personio, arquitectura Medallion en BigQuery
+
+> **Nota:** Este documento contiene todo el contenido del Módulo 1. En la sesión en vivo se profundiza en los temas 1.1 (Sesgos algorítmicos) y 1.2 (Madurez analítica). El resto del material sirve como referencia y contexto para los alumnos.
 
 ---
 
@@ -298,7 +304,7 @@ Nivel 1: OPERACIONAL
 
 ---
 
-## BLOQUE 5: Cierre y Q&A (30 min)
+## Cierre del Módulo 1
 
 ### Resumen de ideas clave
 1. Los datos de personas requieren un estándar ético y legal superior a otros datos de negocio.
@@ -307,14 +313,15 @@ Nivel 1: OPERACIONAL
 4. Los sesgos no son un bug, son una feature de los datos históricos. Hay que detectarlos activamente.
 5. La tecnología (Vertex AI) es el medio, no el fin. Sin contexto de negocio y governance, es ruido.
 
-### Preguntas guía para la discusión
-- ¿Qué nivel de madurez analítica tenéis en vuestro departamento?
-- ¿Habéis tenido algún "incidente de datos" con datos de empleados?
-- ¿Cómo gestionáis el equilibrio entre insight y privacidad?
-- ¿Qué caso de uso os parece más accionable para empezar?
+### Conexión con el notebook práctico
+En el notebook de clase (Módulo 1) se aplican estos conceptos sobre datos reales anonimizados de Personio (209 empleados, 117 columnas):
+- Análisis de brecha salarial de género (bruta + controlada por band)
+- Compa-ratio por banda y género
+- K-anonimidad progresiva: riesgo de re-identificación con datos reales
+- Proxy discrimination: correlación de variables con categorías protegidas
 
-### Preview del Módulo 2
-En el siguiente módulo entraremos directamente en GCP: configuración de entorno, BigQuery como base, y primeros pasos en Vertex AI Workbench con datos reales (sintéticos) de People Analytics.
+### Transición al Módulo 2
+A continuación exploramos la **arquitectura GCP** que sostiene estos datos: Cloud Storage como Data Lake, BigLake, INFORMATION_SCHEMA, IAM, Analytics Hub y patrones dev/test/prod.
 
 ---
 
