@@ -1,1 +1,12 @@
 google
+google-cloud-bigquery
+google-cloud-bigquery-analyticshub
+google-cloud-storage
+pandas 
+pyarrow 
+db-dtypes 
+python-dotenv
+matplotlib 
+seaborn 
+scikit-learn 
+scipy
