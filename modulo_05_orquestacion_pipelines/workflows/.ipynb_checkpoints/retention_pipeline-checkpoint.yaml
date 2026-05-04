@@ -1,0 +1,138 @@
+# Cloud Workflows — Pipeline mensual de Retention Risk
+#
+# Orquesta los Stored Procedures construidos en el Módulo 6:
+#   1. sp_build_retention_features  (feature_store_retention)
+#   2. sp_score_retention           (predictions_retention)
+#   3. sp_apply_decision_rule       (predictions_retention)
+#   4. CREATE SNAPSHOT TABLE        (auditoría)
+#
+# Permisos requeridos (mínimos) para la Service Account del Workflow:
+#   - roles/bigquery.jobUser                       (proyecto)
+#   - roles/bigquery.dataEditor en datasets:       feature_store_retention, predictions_retention, pipeline_runs
+#   - roles/bigquery.dataViewer en datasets:       silver_personio, gold_people_analytics, ml_models
+#
+# Permisos OPCIONALES para mayor observabilidad (descomentar bloques sys.log y Pub/Sub):
+#   - roles/logging.logWriter                      (proyecto)
+#   - roles/pubsub.publisher en topics:            retention-pipeline-status, retention-pipeline-alerts
+#
+# Despliegue:
+#   gcloud workflows deploy retention-pipeline \
+#     --location=europe-southwest1 \
+#     --source=workflows/retention_pipeline.yaml
+
+main:
+  params: [args]
+  steps:
+    - resolver_target_month:
+        # target_month es OBLIGATORIO (string YYYY-MM-DD).
+        # Cloud Scheduler / Eventarc / Function deben siempre pasarlo.
+        assign:
+          - target_month: '${args.target_month}'
+          - project_id: project-9176af0b-ecb3-4050-859
+          - run_id: '${uuid.generate()}'
+
+    # ────────────────────────────────────────────────────────────────────
+    # Paso 1: Construcción de features
+    # ────────────────────────────────────────────────────────────────────
+    - paso_1_build_features:
+        call: googleapis.bigquery.v2.jobs.query
+        args:
+          projectId: '${project_id}'
+          body:
+            query: ${"CALL `" + project_id + ".feature_store_retention.sp_build_retention_features`(DATE \"" + target_month + "\")"}
+            useLegacySql: false
+            labels:
+              pipeline: retention-risk
+              step: build_features
+              env: prod
+            maximumBytesBilled: "53687091200"
+
+    # ────────────────────────────────────────────────────────────────────
+    # Paso 2: Scoring del modelo (ML.PREDICT → predictions_retention.scores)
+    # ────────────────────────────────────────────────────────────────────
+    - paso_2_score:
+        call: googleapis.bigquery.v2.jobs.query
+        args:
+          projectId: '${project_id}'
+          body:
+            query: ${"CALL `" + project_id + ".predictions_retention.sp_score_retention`(DATE \"" + target_month + "\")"}
+            useLegacySql: false
+            labels:
+              pipeline: retention-risk
+              step: score
+              env: prod
+            maximumBytesBilled: "10737418240"
+
+    # ────────────────────────────────────────────────────────────────────
+    # Paso 3: Aplicar regla de decisión newsvendor
+    # ────────────────────────────────────────────────────────────────────
+    - paso_3_apply_decision:
+        call: googleapis.bigquery.v2.jobs.query
+        args:
+          projectId: '${project_id}'
+          body:
+            query: ${"CALL `" + project_id + ".predictions_retention.sp_apply_decision_rule`(DATE \"" + target_month + "\")"}
+            useLegacySql: false
+            labels:
+              pipeline: retention-risk
+              step: apply_decision
+              env: prod
+            maximumBytesBilled: "10737418240"
+
+    # ────────────────────────────────────────────────────────────────────
+    # Paso 4: Snapshot inmutable de auditoría (nice-to-have, capturamos errores)
+    # ────────────────────────────────────────────────────────────────────
+    - paso_4_snapshot:
+        try:
+          call: googleapis.bigquery.v2.jobs.query
+          args:
+            projectId: '${project_id}'
+            body:
+              query: ${"CREATE SNAPSHOT TABLE `" + project_id + ".predictions_retention.retention_actions_snap_" + text.replace_all(target_month, "-", "") + "_" + text.replace_all(text.substring(time.format(sys.now(), "%Y-%m-%d"), 0, 10), "-", "") + "` CLONE `" + project_id + ".predictions_retention.retention_actions`"}
+              useLegacySql: false
+              labels:
+                pipeline: retention-risk
+                step: snapshot
+                env: prod
+        except:
+          as: e
+          # Snapshot es nice-to-have — si falla (snapshot duplicado, etc.) no abortamos
+          steps:
+            - swallow_snapshot_error:
+                assign:
+                  - snapshot_status: failed_but_continuing
+
+    # ────────────────────────────────────────────────────────────────────
+    # Paso 5: Retornar status
+    # ────────────────────────────────────────────────────────────────────
+    - return_status:
+        return:
+          status: SUCCESS
+          target_month: '${target_month}'
+          run_id: '${run_id}'
+
+# ────────────────────────────────────────────────────────────────────
+# Bloques OPCIONALES para mayor observabilidad
+# (descomentar y añadir los pasos a 'steps' arriba si la SA tiene
+#  roles/logging.logWriter y roles/pubsub.publisher)
+# ────────────────────────────────────────────────────────────────────
+#
+# Logging de inicio:
+#     - log_inicio:
+#         call: sys.log
+#         args:
+#           text: '${"[retention-pipeline] target_month=" + target_month + " run_id=" + run_id}'
+#           severity: INFO
+#
+# Notificación de éxito:
+#     - notificar_exito:
+#         call: googleapis.pubsub.v1.projects.topics.publish
+#         args:
+#           topic: '${"projects/" + project_id + "/topics/retention-pipeline-status"}'
+#           body:
+#             messages:
+#               - data: '${base64.encode(text.encode("OK retention-pipeline para " + target_month))}'
+#                 attributes:
+#                   pipeline: retention-risk
+#                   target_month: '${target_month}'
+#                   status: SUCCESS
