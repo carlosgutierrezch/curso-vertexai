@@ -115,11 +115,24 @@ Real People Analytics case definition, GCP architecture design, BigQuery modelin
 | `modulo_02_arquitectura_gcp/presentacion.md` | Module 2 | Full lecture notes — 12 themes: project org, dev/test/prod, architecture, source integration, secure ingestion, DL vs DW, E2E flow, IAM, cost control, scalability, BigLake, Analytics Hub |
 | `modulo_02_arquitectura_gcp/notebook.ipynb` | Module 2 | Hands-on: INFORMATION_SCHEMA exploration, Cloud Storage as Data Lake, BigLake external tables, job auditing & cost control, IAM & authorized views, Analytics Hub exchange/listing, dev/test/prod separation with labels |
 | `modulo_02_arquitectura_gcp/libro_interactivo.html` | Module 2 | Interactive HTML book (12 chapters): GCP project setup, BigQuery, Cloud Storage, schemas, data loading, SQL for PA, ETL medallion pipeline, external tables, production patterns, Vertex AI bridge |
+| `modulo_03_ingesta_datos/presentacion.md` | Module 3 | Full lecture notes for Sesión 2 (parte 1) — 4 themes: Pub/Sub, integración con APIs/sistemas (Personio), arquitecturas en tiempo real, comparación coste/complejidad streaming vs batch |
+| `modulo_03_ingesta_datos/notebook.ipynb` | Module 3 | Hands-on: crear topics + subscriptions, publicar eventos sintéticos derivados de Personio (NUEVA_ALTA, CAMBIO_SALARIAL, BAJA_VOLUNTARIA), pull subscription, schema-aware Avro, BigQuery Subscription, comparación batch vs streaming con auditoría INFORMATION_SCHEMA |
+| `modulo_04_pipelines_eventos/presentacion.md` | Module 4 | Full lecture notes for Sesión 2 (parte 2) — 5 themes: event-driven en GCP, Eventarc + Cloud Storage, automatización Dataflow, micro-batch event-driven, los 7 principios de pipelines resilientes |
+| `modulo_04_pipelines_eventos/notebook.ipynb` | Module 4 | Hands-on: GCS→Pub/Sub notifications (alternativa runnable a Eventarc/CF), pipeline event-driven simulado con datos Personio, idempotencia DELETE+INSERT, retry con backoff exponencial, validación con dead letter table, structured logging para Cloud Logging |
+| `modulo_05_orquestacion_pipelines/presentacion.md` | Module 5 | Full lecture notes for Sesión 3 (parte 1) — 5 themes: orquestación, Cloud Workflows, Cloud Composer/Airflow, comparativa, integración Eventarc + Scheduler |
+| `modulo_05_orquestacion_pipelines/notebook.ipynb` | Module 5 | Hands-on: orquesta el pipeline de M6. Despliega Cloud Workflows YAML, configura Cloud Scheduler (cron mensual) + Eventarc (event-driven), inspecciona logs y Pub/Sub status. Composer DAG mostrado como código (no desplegado) |
+| `modulo_05_orquestacion_pipelines/workflows/retention_pipeline.yaml` | Module 5 | Cloud Workflows YAML — 4 pasos (build_features, apply_decision, snapshot, notify), try/except con Pub/Sub, idempotente |
+| `modulo_05_orquestacion_pipelines/composer/retention_pipeline_dag.py` | Module 5 | Airflow DAG equivalente al Workflow YAML — pedagógico, no se despliega en clase |
+| `modulo_06_bigquery_buenas_practicas/presentacion.md` | Module 6 | Full lecture notes for Sesión 3 (parte 2) — 11 themes: modelado producción, particionado/clustering, control coste, optimización, permisos, capa semántica, versionado, snapshots, documentación, INFORMATION_SCHEMA, Stored Procs/UDFs/Procedural Language |
+| `modulo_06_bigquery_buenas_practicas/notebook.ipynb` | Module 6 | **Pipeline e2e de Retention Risk** — proyecto end-to-end estilo `04_baseline_procurement.ipynb`. 16 secciones: setup, carga, feature panel particionado, modelo coste Cu/Co, UDFs, SPs idempotentes, Procedural Language WHILE, hold-out, BQML logistic, regla newsvendor, comparison plot vs naive, capa semántica + authorized views + snapshots, INFORMATION_SCHEMA audit, GenAI brief stub, Vertex AI Model Registry (commented), findings honestos |
+| `04_baseline_procurement.ipynb` | reference | Plantilla de referencia (procurement) que inspira la estructura del notebook M6 |
+| `sesion_03_proyecto_e2e/README.md` | Sesión 3 | Punto de entrada del proyecto e2e — diagrama maestro de arquitectura, run order, permisos IAM requeridos, estado de validación |
+| `sesion_03_proyecto_e2e/notebook.ipynb` | Sesión 3 | **Notebook integrador** que conecta M3+M4+M5+M6. Genera eventos sintéticos desde Personio history, despliega Cloud Function gen2 `event-router-retention` (código embebido) que filtra eventos PAYROLL_CLOSED y dispara el Workflow. End-to-end run con audit subscription y DLQ. 30 cells. Autocontenido (Function code as string embedded) |
 | `modulo_01_contexto_people_analytics/Imagina modulo 1.pptx` | Module 1 | PowerPoint presentation (needs manual update to match new content) |
 | `data/documentacion/` | — | Client data: 3 anonymized CSVs (personio_data, history, gross_salary), PDFs (payroll script, migration, use cases, CV analytics) |
 | `distribucion_sesiones.md` | — | Session-by-session content distribution (12 sessions, 19 modules) |
 | `.env` | — | Environment variable template (placeholders, no real credentials) |
-| `requirements.txt` | — | Incomplete — only contains `google` |
+| `requirements.txt` | — | Python deps (BQ, Pub/Sub, GCS, pandas, matplotlib, scikit-learn) |
 
 ## Dataset — Real Anonymized Data (Personio)
 
