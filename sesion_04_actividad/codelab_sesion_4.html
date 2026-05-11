@@ -819,6 +819,66 @@ SELECT 'fact_payroll_monthly' AS tabla, COUNT(*) AS filas FROM `silver_personio.
 
   <p>Si te falta alguna tabla o el conteo no cuadra, vuelve al notebook de la Sesión 1 y reejecuta la carga antes de continuar.</p>
 
+  <h2>¿Por qué Dataform y no SQL directo en BigQuery?</h2>
+
+  <p>Es la pregunta que aparece en cuanto ejecutas tu primer SQLX: <em>si CREATE TABLE AS SELECT funciona igual en BigQuery Studio, ¿qué pinta Dataform aquí?</em>. Respuesta honesta: para <strong>una</strong> tabla, Dataform es overkill. Lo que ganas, lo ganas cuando se acumulan SQLX y dependencias.</p>
+
+  <p>Concretamente, esto es lo que Dataform te da sin pedírselo (cosas que <code>CREATE TABLE</code> a pelo no incluye):</p>
+
+  <ul>
+    <li><strong>Assertions materializadas como objetos auditables.</strong> Cuando un SQLX declara <code>nonNull</code> o <code>uniqueKey</code>, Dataform genera un job paralelo que verifica esa regla. Si mañana el origen mete <code>NULL</code> donde no debe, el pipeline falla ruidosamente en lugar de propagar datos rotos.</li>
+    <li><strong>Idempotencia gratis.</strong> Cada SQLX se compila a <code>CREATE OR REPLACE</code>. Re-ejecutas 100 veces sin errores ni duplicados.</li>
+    <li><strong>Compilación previa a ejecución.</strong> Antes de gastar un euro, Dataform valida sintaxis y resuelve variables. Si hay un typo, te lo dice <em>antes</em> de lanzar el job.</li>
+    <li><strong>Variables portables.</strong> <code>${dataform.projectConfig.defaultDatabase}</code> resuelve al proyecto del entorno. El mismo SQLX funciona en dev, test y prod cambiando solo el YAML.</li>
+    <li><strong>DAG de dependencias automático.</strong> Cuando un SQLX referencia otro con <code>${ref("tabla")}</code>, Dataform respeta el orden al ejecutar "All actions". No tienes que orquestar a mano.</li>
+    <li><strong>Lineage visualizable.</strong> La pestaña <em>Compiled graph</em> muestra el grafo completo (fuente → intermedias → consumo). Un screenshot le explica a tu jefe qué hace el pipeline.</li>
+    <li><strong>Git integrado.</strong> Cada cambio queda como commit en el repo del workspace. Auditoría de "quién cambió la fórmula del compa-ratio el martes" gratis (lo conectaremos en M9).</li>
+  </ul>
+
+  <div class="callout tip">
+    <div class="callout-icon"></div>
+    <div class="callout-body">
+      <strong>La forma honesta de venderlo</strong>
+      Dataform es a SQL crudo lo que Git es a copiar archivos con sufijo <code>_v2</code>, <code>_v3_final</code>, <code>_v3_final_BUENO</code>. Para 1 query Git también es overkill — la conversación interesante empieza cuando tienes 30 SQLX y un equipo de 4 personas tocándolas.
+    </div>
+  </div>
+
+  <p>Por eso este codelab usa <strong>tres superficies</strong>. GCP las separa a propósito: cada una es buena en algo específico y mala en el resto. Tu trabajo es saber cuándo ir a cada una.</p>
+
+  <table>
+    <thead>
+      <tr><th>Superficie</th><th>Para qué la usas</th><th>Dónde vive su artefacto</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Dataform</strong></td>
+        <td>SQLX productivos versionados, assertions, lineage. Descripciones de tabla y columna van en el <code>config</code>.</td>
+        <td>Repo Git del workspace</td>
+      </tr>
+      <tr>
+        <td><strong>BigQuery Studio</strong></td>
+        <td>Explorar schemas, queries one-off, ver el plan de ejecución, navegar <code>INFORMATION_SCHEMA</code>, saved queries con comentarios.</td>
+        <td>BigQuery (jobs, saved queries, descriptions de tabla)</td>
+      </tr>
+      <tr>
+        <td><strong>Workbench (notebook)</strong></td>
+        <td>Lo que SQL no puede hacer: gráficos, estadística, ML, llamar APIs (Vertex AI, GCS, Pub/Sub), comparar dry-runs vía Python SDK, prototipar antes de formalizar en Dataform.</td>
+        <td>Instancia personal de Workbench</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <div class="callout-icon"></div>
+    <div class="callout-body">
+      <strong>Anti-patrón: notebook como capa de documentación paralela</strong>
+      Si lo único que va al notebook es "el mismo SQL que ya está en Dataform pero pegado aquí también para acordarme", eso es ruido. Esa documentación ya vive en el <code>description</code> del SQLX, en los commits de Git, en los labels de BigQuery. Duplicarla en un notebook genera fuentes de verdad divergentes que se desincronizan en 3 meses.<br><br>
+      El notebook justifica su existencia <strong>solo</strong> cuando Python te da algo que SQL no: visualizar, comparar programáticamente, entrenar un modelo, llamar a una API. Si no haces nada de eso, no abras notebook.
+    </div>
+  </div>
+
+  <p>En este codelab usarás Workbench específicamente para: <strong>(1)</strong> graficar la distribución de variaciones salariales del Cap 3, <strong>(2)</strong> comparar dry-runs entre el anti-patrón y la versión optimizada, <strong>(3)</strong> visualizar la cohort retention curve del Cap 6. Todo lo demás vive en Dataform o BigQuery Studio.</p>
+
   <h2>Convención: tres superficies de ejecución</h2>
 
   <div class="callout tip">
