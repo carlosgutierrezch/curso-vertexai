@@ -32,7 +32,8 @@ CREATE TABLE IF NOT EXISTS `{project}.{dataset}.{table}` (
   skills            ARRAY<STRING>,
   ultima_empresa    STRING,
   source_file       STRING,
-  processed_at      TIMESTAMP
+  processed_at      TIMESTAMP,
+  ddate             TIMESTAMP,
 );
 """
 
