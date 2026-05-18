@@ -1,0 +1,20 @@
+  - validate:
+      call: http.post
+      args:
+        url: VALIDATOR_URL # TODO: Replace
+        auth:
+          type: OIDC
+        body:
+            bucket: ${bucket}
+            file: ${file}
+      result: validateResponse
+  - log_validation:
+      call: sys.log
+      args:
+          text: ${validateResponse.body}
+          severity: INFO
+  - check_valid:
+      switch:
+        - condition: ${validateResponse.body.valid == true}
+          next: parse
+      next: end

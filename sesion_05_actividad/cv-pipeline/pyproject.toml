@@ -1,0 +1,5 @@
+[project]
+name = "cv-pipeline"
+version = "0.1.0"
+description = "Pipeline serverless en GCP para procesamiento de CVs"
+requires-python = ">=3.11"

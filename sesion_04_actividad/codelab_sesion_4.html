@@ -1,0 +1,1941 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analytics con BigQuery y Dataform — Sesión 4 · Imagina</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
+
+<style>
+:root {
+  --google-blue: #1a73e8;
+  --google-blue-dark: #1557b0;
+  --google-blue-bg: #e8f0fe;
+  --imagina-cyan: #00B5D8;
+  --text: #202124;
+  --text-secondary: #5f6368;
+  --text-tertiary: #80868b;
+  --bg-page: #f8f9fa;
+  --bg-card: #ffffff;
+  --bg-alt: #f1f3f4;
+  --bg-code: #f8f9fa;
+  --border: #dadce0;
+  --border-light: #e8eaed;
+  --success: #1e8e3e;
+  --warning: #f29900;
+  --danger: #d93025;
+  --sidebar-w: 240px;
+  --content-max: 820px;
+  --header-h: 64px;
+  --shadow-card: 0 1px 2px 0 rgba(60,64,67,.08), 0 1px 3px 1px rgba(60,64,67,.05);
+  --shadow-hover: 0 1px 3px 0 rgba(60,64,67,.16), 0 4px 8px 3px rgba(60,64,67,.08);
+  --font-body: 'Google Sans', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-text: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'Roboto Mono', Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-text);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg-page);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Header */
+.app-header {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: var(--header-h);
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-light);
+  display: flex; align-items: center;
+  padding: 0 32px;
+  z-index: 100;
+}
+.header-title {
+  flex: 1;
+  font-family: var(--font-body);
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--text);
+  letter-spacing: -0.2px;
+}
+.header-meta {
+  display: flex; align-items: center; gap: 24px;
+  font-size: 14px; color: var(--text-secondary);
+}
+.time-remaining { display: flex; align-items: center; gap: 6px; }
+.time-remaining svg { width: 18px; height: 18px; }
+.brand-tag {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px;
+  background: var(--bg-alt);
+  border-radius: 16px;
+  font-size: 12px; font-weight: 500;
+  color: var(--text-secondary);
+}
+.brand-tag .dot {
+  width: 8px; height: 8px;
+  background: var(--imagina-cyan);
+  border-radius: 50%;
+}
+.menu-toggle {
+  display: none;
+  background: transparent; border: none;
+  font-size: 24px; cursor: pointer; padding: 8px;
+  color: var(--text-secondary);
+  margin-right: 8px;
+}
+
+/* Sidebar */
+.sidebar {
+  position: fixed;
+  top: var(--header-h); left: 0; bottom: 0;
+  width: var(--sidebar-w);
+  background: var(--bg-page);
+  overflow-y: auto;
+  padding: 16px 8px 16px 12px;
+}
+.toc {
+  list-style: none;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.toc a {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  text-decoration: none;
+  color: var(--text);
+  font-family: var(--font-text);
+  font-size: 12px;
+  line-height: 1.3;
+  font-weight: 400;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+  cursor: pointer;
+}
+.toc a:hover {
+  background: var(--bg-alt);
+  text-decoration: none;
+}
+.toc a:hover .label,
+.toc a:hover .module-tag {
+  text-decoration: none;
+}
+.toc a.active {
+  font-weight: 700;
+}
+.toc .num {
+  flex-shrink: 0;
+  width: 24px; height: 24px;
+  background: var(--text-tertiary);
+  color: white;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-body);
+  font-size: 12px; font-weight: 500;
+  transition: background 0.15s ease;
+}
+.toc a.active .num { background: var(--google-blue); }
+.toc a.completed .num { background: var(--google-blue); }
+.toc a.completed .num-text { display: none; }
+.toc a.completed .num::before {
+  content: "";
+  width: 12px; height: 12px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'><path d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z'/></svg>");
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+.toc .label { flex: 1; }
+
+/* Tag de M7/M8 en cards del sidebar */
+.toc .module-tag {
+  font-family: var(--font-body);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  margin-top: 1px;
+}
+
+/* Main + content card */
+.main {
+  margin-left: var(--sidebar-w);
+  margin-top: var(--header-h);
+  padding: 40px 32px 140px;
+  min-height: calc(100vh - var(--header-h));
+}
+.content-card {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 56px 64px;
+  box-shadow: var(--shadow-card);
+}
+
+/* Capítulos */
+section.chapter {
+  scroll-margin-top: calc(var(--header-h) + 24px);
+  padding-bottom: 64px;
+  position: relative;
+}
+section.chapter:last-of-type { padding-bottom: 0; }
+section.chapter + section.chapter {
+  border-top: 1px solid var(--border-light);
+  padding-top: 64px;
+}
+
+h1.chapter-title {
+  font-family: var(--font-body);
+  font-size: 38px;
+  font-weight: 400;
+  color: var(--text);
+  line-height: 1.2;
+  margin-bottom: 32px;
+  letter-spacing: -0.5px;
+}
+h2 {
+  font-family: var(--font-body);
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--text);
+  margin-top: 40px;
+  margin-bottom: 16px;
+  letter-spacing: -0.2px;
+}
+h3 {
+  font-family: var(--font-body);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text);
+  margin-top: 28px;
+  margin-bottom: 12px;
+}
+
+p { margin-bottom: 16px; color: var(--text); line-height: 1.65; }
+a { color: var(--google-blue); text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { margin-bottom: 16px; padding-left: 28px; }
+li { margin-bottom: 8px; line-height: 1.65; }
+strong { color: var(--text); font-weight: 500; }
+
+code:not([class]) {
+  background: var(--bg-alt);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* Code blocks */
+.code-block {
+  position: relative;
+  margin: 20px 0 24px;
+  border-radius: 8px;
+  background: var(--bg-code);
+  border: 1px solid var(--border-light);
+  overflow: hidden;
+}
+.code-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 16px;
+  background: rgba(0,0,0,0.03);
+  border-bottom: 1px solid var(--border-light);
+}
+.code-label {
+  font-family: var(--font-body);
+  font-size: 12px; font-weight: 500;
+  color: var(--text-secondary);
+  display: flex; align-items: center; gap: 6px;
+  letter-spacing: 0.3px;
+}
+.code-label.bad { color: var(--danger); }
+.code-label.bad::before { content: "✕"; font-weight: 700; }
+.code-label.good { color: var(--success); }
+.code-label.good::before { content: "✓"; font-weight: 700; }
+.code-label.file { color: var(--google-blue); font-family: var(--font-mono); }
+.code-label.file::before { content: "📄"; }
+
+.copy-btn {
+  background: transparent;
+  color: var(--google-blue);
+  border: none;
+  padding: 4px 10px;
+  font-size: 12px; font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: background 0.15s ease;
+}
+.copy-btn:hover { background: var(--google-blue-bg); }
+.copy-btn.copied { color: var(--success); }
+
+.code-block pre {
+  margin: 0;
+  padding: 16px;
+  overflow-x: auto;
+  font-size: 13.5px;
+  line-height: 1.6;
+  background: var(--bg-code) !important;
+}
+.code-block pre code {
+  font-family: var(--font-mono);
+  background: none !important;
+  padding: 0;
+  font-size: 13.5px;
+}
+
+/* Callouts */
+.callout {
+  display: flex; gap: 12px;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 8px;
+  border-left: 4px solid;
+  font-size: 14px;
+  line-height: 1.55;
+}
+.callout-icon {
+  flex-shrink: 0;
+  width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  margin-top: 1px;
+}
+.callout-body { flex: 1; }
+.callout-body strong:first-child {
+  display: block;
+  margin-bottom: 4px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+.callout.tip { border-color: var(--google-blue); background: var(--google-blue-bg); }
+.callout.tip strong:first-child { color: var(--google-blue-dark); }
+.callout.warn { border-color: var(--warning); background: #fef7e0; }
+.callout.warn strong:first-child { color: #b06000; }
+.callout.danger { border-color: var(--danger); background: #fce8e6; }
+.callout.danger strong:first-child { color: #a50e0e; }
+.callout.pa { border-color: var(--imagina-cyan); background: #e0f7fa; }
+.callout.pa strong:first-child { color: #006064; }
+.callout.success { border-color: var(--success); background: #e6f4ea; }
+.callout.success strong:first-child { color: #1e6e2d; }
+
+/* Tablas */
+.table-wrap {
+  margin: 20px 0;
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  background: var(--bg-card);
+}
+table th {
+  background: var(--bg-alt);
+  color: var(--text);
+  text-align: left;
+  padding: 12px 16px;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 0.3px;
+  border-bottom: 1px solid var(--border);
+}
+table td {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-light);
+  vertical-align: top;
+  color: var(--text);
+}
+table tr:hover td { background: var(--bg-page); }
+
+/* Botones nav */
+.nav-inline {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 12px;
+  margin-top: 56px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border-light);
+}
+.btn-back {
+  background: transparent; border: none;
+  color: var(--google-blue);
+  font-family: var(--font-body);
+  font-size: 14px; font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 10px 20px;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+.btn-back:hover { background: var(--google-blue-bg); text-decoration: none; }
+.btn-next {
+  background: var(--google-blue);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 12px 28px;
+  font-family: var(--font-body);
+  font-size: 14px; font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  box-shadow: var(--shadow-card);
+}
+.btn-next:hover {
+  background: var(--google-blue-dark);
+  text-decoration: none;
+  box-shadow: var(--shadow-hover);
+  color: white;
+}
+.btn-back.disabled, .btn-next.disabled { opacity: 0; pointer-events: none; }
+
+/* Floating nav */
+.floating-nav {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  display: flex; align-items: center; gap: 8px;
+  z-index: 50;
+}
+.floating-nav .btn-back, .floating-nav .btn-next { box-shadow: var(--shadow-card); }
+.floating-nav .btn-back {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+}
+
+/* Card grid */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin: 24px 0;
+}
+.card {
+  padding: 20px;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background: var(--bg-card);
+  transition: box-shadow 0.15s ease;
+}
+.card:hover { box-shadow: var(--shadow-card); }
+.card-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px;
+  background: var(--google-blue-bg);
+  color: var(--google-blue);
+  border-radius: 50%;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+.card-title {
+  font-family: var(--font-body);
+  font-size: 15px; font-weight: 500;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.card-body {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* ============================================================
+   draw.io
+   ============================================================ */
+.figure {
+  margin: 24px 0;
+  text-align: center;
+}
+.figure img,
+.figure svg {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background: var(--bg-card);
+}
+.figure .caption {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+.figure-placeholder {
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  padding: 60px 20px;
+  text-align: center;
+  background: var(--bg-page);
+  margin: 24px 0;
+}
+.figure-placeholder .icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  opacity: 0.4;
+}
+.figure-placeholder .title {
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+.figure-placeholder .hint {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .content-card { padding: 40px 36px; }
+}
+@media (max-width: 900px) {
+  :root { --sidebar-w: 280px; }
+  .menu-toggle { display: block; }
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    z-index: 99;
+    box-shadow: var(--shadow-hover);
+  }
+  .sidebar.open { transform: translateX(0); }
+  .main { margin-left: 0; padding: 24px 16px 100px; }
+  .content-card { padding: 32px 24px; }
+  .header-meta .brand-tag { display: none; }
+  .floating-nav { bottom: 16px; right: 16px; }
+  h1.chapter-title { font-size: 28px; }
+  h2 { font-size: 20px; }
+}
+@media print {
+  .app-header, .sidebar, .floating-nav, .copy-btn { display: none !important; }
+  .main { margin: 0; padding: 24px; }
+  .content-card { box-shadow: none; border: none; padding: 0; }
+  section.chapter { page-break-after: always; border: none !important; }
+}
+
+/* Prism */
+.token.keyword { color: #d73a49; font-weight: 500; }
+.token.string { color: #032f62; }
+.token.comment { color: #6a737d; font-style: italic; }
+.token.number { color: #005cc5; }
+.token.function { color: #6f42c1; }
+.token.operator { color: #d73a49; background: transparent; }
+.token.punctuation { color: var(--text-secondary); }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
+  <div class="header-title">Analytics con BigQuery y Dataform</div>
+  <div class="header-meta">
+    <div class="time-remaining">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.4 0-8-3.6-8-8s3.6-8 8-8 8 3.6 8 8-3.6 8-8 8zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z"/>
+      </svg>
+      <span id="timeRemaining">Quedan 100 minutos</span>
+    </div>
+    <div class="brand-tag">
+      <span class="dot"></span>
+      <span>Sesión 4 · Imagina · People Analytics</span>
+    </div>
+  </div>
+</header>
+
+<aside class="sidebar" id="sidebar">
+  <ul class="toc" id="toc">
+    <li><a href="#intro" data-target="intro" data-duration="8"><span class="num"><span class="num-text">1</span></span><span class="label">Introducción y arquitectura<div class="module-tag">Visión general</div></span></a></li>
+    <li><a href="#setup-dataform" data-target="setup-dataform" data-duration="12"><span class="num"><span class="num-text">2</span></span><span class="label">Setup: workspace Dataform y notebook<div class="module-tag">M8</div></span></a></li>
+    <li><a href="#window-functions" data-target="window-functions" data-duration="15"><span class="num"><span class="num-text">3</span></span><span class="label">Window functions sobre salary_history<div class="module-tag">M7</div></span></a></li>
+    <li><a href="#scd2" data-target="scd2" data-duration="18"><span class="num"><span class="num-text">4</span></span><span class="label">Construir dim_employee_scd2 con MERGE<div class="module-tag">M8</div></span></a></li>
+    <li><a href="#promotions" data-target="promotions" data-duration="18"><span class="num"><span class="num-text">5</span></span><span class="label">Promociones y métricas temporales<div class="module-tag">M7</div></span></a></li>
+    <li><a href="#career-events" data-target="career-events" data-duration="20"><span class="num"><span class="num-text">6</span></span><span class="label">fact_career_events: CTEs y cohort retention<div class="module-tag">M7</div></span></a></li>
+    <li><a href="#capa-semantica" data-target="capa-semantica" data-duration="20"><span class="num"><span class="num-text">7</span></span><span class="label">Capa semántica, tests y cierre<div class="module-tag">M7+M8</div></span></a></li>
+  </ul>
+</aside>
+
+<main class="main">
+<div class="content-card">
+
+<!-- ===========================================================
+     1. INTRODUCCIÓN Y ARQUITECTURA  ◄── DEMO COMPLETA
+     =========================================================== -->
+<section id="intro" class="chapter">
+  <h1 class="chapter-title">1. Introducción y arquitectura</h1>
+
+  <p>Bienvenido al codelab de la <strong>Sesión 4</strong> del curso. En las próximas dos horas vas a construir, paso a paso, un pipeline real de <strong>Career Path Analytics</strong> sobre los datos anonimizados de Personio que ya tenemos cargados desde la Sesión 1.</p>
+
+  <p>Este modulo es una fusión práctica de los <strong>Módulos 7 (SQL avanzado)</strong> y <strong>8 (Dataform)</strong>. Cada concepto SQL aparece dentro de un SQLX de Dataform que se ejecuta de verdad y produce una tabla que el equipo de RRHH puede usar mañana.</p>
+
+  <h2>Las 3 preguntas de negocio que vas a contestar</h2>
+
+  <p>El equipo de RRHH del cliente quiere responder a tres preguntas que hoy nadie en la organización sabe contestar de forma consistente:</p>
+
+  <ol>
+    <li><strong>¿Qué porcentaje de empleados ha sido promocionado en los últimos 12 meses?</strong> Y dentro de eso, ¿en qué países y bandas se concentra?</li>
+    <li><strong>¿Qué cohorte de contratación tiene mayor riesgo de salida?</strong> ¿La gente que entra en Q1 se queda más que la que entra en Q3?</li>
+    <li><strong>¿Cómo evolucionan los salarios cuando alguien pasa de banda P2 a P3?</strong> ¿Hay un patrón de subida o se mantiene el rango anterior?</li>
+  </ol>
+
+  <p>Las tres preguntas requieren <strong>window functions, métricas temporales, CTEs estructurados, SCD2 y tests de calidad</strong>.Es decir: <strong>todos los temas del M7 y del M8.</strong></p>
+
+  <h2>Arquitectura del pipeline</h2>
+
+  <p>Este es el flujo de datos completo que vas a construir. Cada caja es una tabla o vista que crearás en una sección del codelab:</p>
+
+  <!-- ============================================================
+       PLACEHOLDER PARA TU DIAGRAMA DE ARQUITECTURA (draw.io)
+       ============================================================
+       Tres opciones para meter el diagrama (elige UNA):
+
+       OPCIÓN A — PNG exportado de draw.io (más fácil):
+         1. En draw.io: Archivo > Exportar como > PNG
+         2. Sube el PNG al mismo directorio que este HTML
+         3. Reemplaza este bloque <div class="figure-placeholder">...</div>
+            por:  <div class="figure">
+                    <img src="diagrama_arquitectura.png" alt="...">
+                    <div class="caption">Arquitectura del pipeline...</div>
+                  </div>
+
+       OPCIÓN B — SVG exportado (recomendado, escalable):
+         1. En draw.io: Archivo > Exportar como > SVG
+         2. Sube el SVG al mismo directorio
+         3. Mismo reemplazo pero con: <img src="diagrama_arquitectura.svg" ...>
+
+       OPCIÓN C — SVG inline (sin archivos externos):
+         1. Abre el .svg con un editor de texto
+         2. Copia TODO el contenido (desde <svg> hasta </svg>)
+         3. Pégalo dentro de <div class="figure"> reemplazando el placeholder
+       ============================================================ -->
+
+  <div class="figure-placeholder">
+    <div class="icon"></div>
+    <div class="title">Diagrama de arquitectura del pipeline</div>
+    <div class="hint">[ Reemplazar con export draw.io: PNG o SVG ]</div>
+  </div>
+
+  <p>El flujo lee de las tablas Silver de Personio (ya construidas en M2), las transforma con Dataform en una serie de fact tables y dimensiones, y produce una capa semántica que alimentará el dashboard de Looker Studio que veremos en M14.</p>
+
+  <h2>Qué tendrás al final</h2>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-num">1</div>
+      <div class="card-title">5 SQLX en Dataform</div>
+      <div class="card-body">Workspace versionado con dim_employee_scd2, fact_promotions, fact_career_events, la UDF tenure_bucket y la vista v_career_path_dashboard.</div>
+    </div>
+    <div class="card">
+      <div class="card-num">2</div>
+      <div class="card-title">Tabla dim_employee_scd2</div>
+      <div class="card-body">Histórico completo de cambios de banda con MERGE idempotente. Lista para responder a "¿cuál era la banda de Juan en Q2 2024?".</div>
+    </div>
+    <div class="card">
+      <div class="card-num">3</div>
+      <div class="card-title">Vista v_career_path_dashboard</div>
+      <div class="card-body">Capa semántica con UDFs reutilizables. Reemplaza 12 implementaciones distintas de "tenure" por una sola autorizada.</div>
+    </div>
+    <div class="card">
+      <div class="card-num">4</div>
+      <div class="card-title">Suite de tests</div>
+      <div class="card-body">Assertions de Dataform que detectan duplicados, nulos en columnas críticas y violaciones de reglas de negocio antes de que lleguen al dashboard.</div>
+    </div>
+  </div>
+
+  <div class="callout pa">
+    <div class="callout-icon"></div>
+    <div class="callout-body">
+      <strong>Caso del cliente</strong>
+      Trabajaremos sobre los datasets <code>silver_personio.dim_employee</code>, <code>silver_personio.fact_salary_history</code> y <code>silver_personio.fact_payroll_monthly</code> que ya construimos en la Sesión 1. Las queries son ejecutables tal cual sobre tu proyecto GCP del curso.
+    </div>
+  </div>
+
+  <h2>Prerequisitos</h2>
+
+  <ul>
+    <li><strong>Sesiones 1-3 completadas</strong>: en concreto, los datasets Silver de Personio deben existir en tu proyecto GCP.</li>
+    <li><strong>Acceso a Dataform</strong> en el proyecto del curso (rol <code>roles/dataform.editor</code>).</li>
+    <li><strong>BigQuery enabled</strong> y la región <code>europe-southwest1</code> configurada.</li>
+    <li><strong>Conocimiento básico de SQL</strong>: SELECT, JOIN, GROUP BY. Las window functions y CTEs los explicamos aquí.</li>
+  </ul>
+
+  <div class="callout tip">
+    <div class="callout-icon"></div>
+    <div class="callout-body">
+      <strong>Consejo para sacarle el máximo</strong>
+      Ten dos pestañas abiertas: Este proyecto y la consola de BigQuery. Cada bloque de código tiene un botón "Copiar". La idea es que ejecutes cada query mientras lees, no al final.
+    </div>
+  </div>
+
+  <div class="nav-inline">
+    <span></span>
+    <a href="#setup-dataform" class="btn-next">Empezar</a>
+  </div>
+</section>
+
+<!-- ===========================================================
+     2. SETUP DATAFORM — placeholder
+     =========================================================== -->
+<section id="setup-dataform" class="chapter">
+  <h1 class="chapter-title">2. Setup: workspace Dataform y notebook</h1>
+
+  <p>En esta sección vas a abrir tu notebook de Vertex AI Workbench, crear el workspace de Dataform donde versionarás los SQLX del pipeline, y validar que tienes acceso a las tablas <code>silver_personio.*</code> que construimos en la Sesión 1.</p>
+
+  <h2>Por qué necesitas dos superficies</h2>
+
+  <p>Durante esta sesión vas a alternar entre dos sitios:</p>
+
+  <ul>
+    <li><strong>Notebook de Workbench</strong>: donde ejecutas queries ad-hoc, exploras resultados y generas gráficas. Es tu cuaderno de borrador. Lo que pruebes aquí no queda versionado.</li>
+    <li><strong>Workspace de Dataform</strong>: donde declaras los SQLX que SÍ formarán parte del pipeline. Versionados en Git, con assertions de calidad, idempotentes. Lo que va a producción vive aquí.</li>
+  </ul>
+
+  <p>La regla práctica: <em>exploras en notebook, materializas en Dataform</em>. Cada bloque de código del codelab indicará en su cabecera si va en notebook (etiqueta <code>SQL</code> o <code>Notebook</code>) o en Dataform (etiqueta con un nombre tipo <code>definitions/algo.sqlx</code>).</p>
+
+  <h2>Paso 1: crear el notebook en Workbench</h2>
+
+  <p>Desde la consola de Google Cloud, navega a <strong>Vertex AI &gt; Workbench &gt; Instancias</strong>. Si ya tienes una instancia activa de las sesiones anteriores, ábrela. Si no, crea una nueva con configuración por defecto en la región <code>europe-southwest1</code>.</p>
+
+  <p>Una vez dentro de JupyterLab, crea un notebook nuevo con kernel Python 3 y guárdalo como <code>sesion_04_career_path.ipynb</code>. En la primera celda pega esto y ejecútala:</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-label">Notebook · Celda 1: imports y configuración</span>
+      <button class="copy-btn">Copiar</button>
+    </div>
+<pre><code class="language-python">import os
+from google.cloud import bigquery
+
+PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "tu-project-id")
+LOCATION = "europe-southwest1"
+
+client = bigquery.Client(project=PROJECT_ID, location=LOCATION)
+print(f"Proyecto: {PROJECT_ID} | Región: {LOCATION}")</code></pre>
+  </div>
+
+  <p>Deberías ver una línea con tu project ID y la región. Si te aparece <code>tu-project-id</code> en el output, configura la variable de entorno <code>GOOGLE_CLOUD_PROJECT</code> o sustitúyela directamente en el código.</p>
+
+  <h2>Paso 2: crear el workspace de Dataform</h2>
+
+  <p>En la consola de Google Cloud, navega a <strong>BigQuery &gt; Dataform</strong>. Si es la primera vez que entras al proyecto, crea un repositorio nuevo:</p>
+
+  <ol>
+    <li>Haz click en <strong>Create repository</strong>.</li>
+    <li>Asigna el nombre <code>sesion-04-career-path</code>.</li>
+    <li>Selecciona la región <code>europe-southwest1</code>.</li>
+    <li>Deja la conexión a Git para más adelante (lo veremos en M9).</li>
+  </ol>
+
+  <p>Dentro del repositorio, crea un <strong>Development workspace</strong> con tu nombre (por ejemplo <code>workspace-carlos</code>). Es tu copia personal donde experimentas sin afectar al resto. Al entrar, Dataform crea automáticamente un <code>workflow_settings.yaml</code> en la raíz (en versiones antiguas de Dataform Core el archivo se llamaba <code>dataform.json</code> y usaba sintaxis JSON con nombres distintos). Bórralo todo y déjalo así:</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-label file">workflow_settings.yaml</span>
+      <button class="copy-btn">Copiar</button>
+    </div>
+<pre><code class="language-yaml">defaultProject: tu-project-id
+defaultDataset: career_analytics
+defaultAssertionDataset: dataform_assertions
+defaultLocation: europe-southwest1
+dataformCoreVersion: 3.0.52</code></pre>
+  </div>
+
+  <p>Sustituye <code>tu-project-id</code> por el ID real de tu proyecto (lo encuentras en el selector de proyecto arriba en la consola GCP, o en la URL después de <code>?project=</code>). Esto le dice a Dataform: todos los SQLX se materializarán en el dataset <code>career_analytics</code> de tu proyecto, en la región <code>europe-southwest1</code>, y los assertions vivirán en un dataset aparte llamado <code>dataform_assertions</code>.</p>
+
+  <div class="callout warn">
+    <div class="callout-icon"></div>
+    <div class="callout-body">
+      <strong>YAML es sensible a indentación</strong>
+      Las 5 líneas deben empezar exactamente en la columna 1, sin tabs ni espacios al inicio. Si copias y te da error de parser, borra todo y teclea manualmente. Tras guardar, pulsa <strong>"Instalar paquetes"</strong> arriba a la derecha para que Dataform recompile la configuración.
+    </div>
+  </div>
+
+  <p>Después, borra los archivos de scaffolding <code>definitions/first_view.sqlx</code> y <code>definitions/second_view.sqlx</code> (click derecho → Delete). Son ejemplos por defecto que referencian tablas que no existen en tu proyecto y bloquearían las ejecuciones más adelante.</p>
+
+  <div class="callout warn">
+    <div class="callout-icon"></div>
+    <div class="callout-body">
+      <strong>El dataset career_analytics no existe todavía</strong>
+      No pasa nada. Dataform lo crea automáticamente la primera vez que ejecutes un SQLX que escriba allí (en el cap 4 con <code>dim_employee_scd2</code>). No hace falta crear el dataset a mano.
+    </div>
+  </div>
+
+  <h2>Paso 3: validar acceso a silver_personio</h2>
+
+  <p>Antes de escribir nada más, confirma que tienes lectura sobre las tres tablas Silver que necesita el pipeline. En tu notebook, crea una celda nueva y ejecuta:</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-label">Notebook · Celda 2: validar Silver</span>
+      <button class="copy-btn">Copiar</button>
+    </div>
+<pre><code class="language-python">%%bigquery
+SELECT 'dim_employee'         AS tabla, COUNT(*) AS filas FROM `silver_personio.dim_employee`
+UNION ALL
+SELECT 'fact_salary_history'  AS tabla, COUNT(*) AS filas FROM `silver_personio.fact_salary_history`
+UNION ALL
+SELECT 'fact_payroll_monthly' AS tabla, COUNT(*) AS filas FROM `silver_personio.fact_payroll_monthly`;</code></pre>
+  </div>
+
+  <p>Resultado esperado:</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>tabla</th><th>filas</th></tr></thead>
+      <tbody>
+        <tr><td>dim_employee</td><td>209</td></tr>
+        <tr><td>fact_salary_history</td><td>1.189</td></tr>
+        <tr><td>fact_payroll_monthly</td><td>994</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>Si te falta alguna tabla o el conteo no cuadra, vuelve al notebook de la Sesión 1 y reejecuta la carga antes de continuar.</p>
+
+  <h2>¿Por qué Dataform y no SQL directo en BigQuery?</h2>
+
+  <p>Es la pregunta que aparece en cuanto ejecutas tu primer SQLX: <em>si CREATE TABLE AS SELECT funciona igual en BigQuery Studio, ¿qué pinta Dataform aquí?</em>. Respuesta honesta: para <strong>una</strong> tabla, Dataform es overkill. Lo que ganas, lo ganas cuando se acumulan SQLX y dependencias.</p>
+
+  <p>Concretamente, esto es lo que Dataform te da sin pedírselo (cosas que <code>CREATE TABLE</code> a pelo no incluye):</p>
+
+  <ul>
+    <li><strong>Assertions materializadas como objetos auditables.</strong> Cuando un SQLX declara <code>nonNull</code> o <code>uniqueKey</code>, Dataform genera un job paralelo que verifica esa regla. Si mañana el origen mete <code>NULL</code> donde no debe, el pipeline falla ruidosamente en lugar de propagar datos rotos.</li>
+    <li><strong>Idempotencia gratis.</strong> Cada SQLX se compila a <code>CREATE OR REPLACE</code>. Re-ejecutas 100 veces sin errores ni duplicados.</li>
+    <li><strong>Compilación previa a ejecución.</strong> Antes de gastar un euro, Dataform valida sintaxis y resuelve variables. Si hay un typo, te lo dice <em>antes</em> de lanzar el job.</li>
+    <li><strong>Variables portables.</strong> <code>${dataform.projectConfig.defaultDatabase}</code> resuelve al proyecto del entorno. El mismo SQLX funciona en dev, test y prod cambiando solo el YAML.</li>
+    <li><strong>DAG de dependencias automático.</strong> Cuando un SQLX referencia otro con <code>${ref("tabla")}</code>, Dataform respeta el orden al ejecutar "All actions". No tienes que orquestar a mano.</li>
+    <li><strong>Lineage visualizable.</strong> La pestaña <em>Compiled graph</em> muestra el grafo completo (fuente → intermedias → consumo). Un screenshot le explica a tu jefe qué hace el pipeline.</li>
+    <li><strong>Git integrado.</strong> Cada cambio queda como commit en el repo del workspace. Auditoría de "quién cambió la fórmula del compa-ratio el martes" gratis (lo conectaremos en M9).</li>
+  </ul>
+
+  <div class="callout tip">
+    <div class="callout-icon"></div>
+    <div class="callout-body">
+      <strong>La forma honesta de venderlo</strong>
+      Dataform es a SQL crudo lo que Git es a copiar archivos con sufijo <code>_v2</code>, <code>_v3_final</code>, <code>_v3_final_BUENO</code>. Para 1 query Git también es overkill — la conversación interesante empieza cuando tienes 30 SQLX y un equipo de 4 personas tocándolas.
+    </div>
+  </div>
+
+  <p>Por eso este codelab usa <strong>tres superficies</strong>. GCP las separa a propósito: cada una es buena en algo específico y mala en el resto. Tu trabajo es saber cuándo ir a cada una.</p>
+
+  <table>
+    <thead>
+      <tr><th>Superficie</th><th>Para qué la usas</th><th>Dónde vive su artefacto</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Dataform</strong></td>
+        <td>SQLX productivos versionados, assertions, lineage. Descripciones de tabla y columna van en el <code>config</code>.</td>
+        <td>Repo Git del workspace</td>
+      </tr>
+      <tr>
+        <td><strong>BigQuery Studio</strong></td>
+        <td>Explorar schemas, queries one-off, ver el plan de ejecución, navegar <code>INFORMATION_SCHEMA</code>, saved queries con comentarios.</td>
+        <td>BigQuery (jobs, saved queries, descriptions de tabla)</td>
+      </tr>
+      <tr>
+        <td><strong>Workbench (notebook)</strong></td>
+        <td>Lo que SQL no puede hacer: gráficos, estadística, ML, llamar APIs (Vertex AI, GCS, Pub/Sub), comparar dry-runs vía Python SDK, prototipar antes de formalizar en Dataform.</td>
+        <td>Instancia personal de Workbench</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <div class="callout-icon"></div>
+    <div class="callout-body">
+      <strong>Anti-patrón: notebook como capa de documentación paralela</strong>
+      Si lo único que va al notebook es "el mismo SQL que ya está en Dataform pero pegado aquí también para acordarme", eso es ruido. Esa documentación ya vive en el <code>description</code> del SQLX, en los commits de Git, en los labels de BigQuery. Duplicarla en un notebook genera fuentes de verdad divergentes que se desincronizan en 3 meses.<br><br>
+      El notebook justifica su existencia <strong>solo</strong> cuando Python te da algo que SQL no: visualizar, comparar programáticamente, entrenar un modelo, llamar a una API. Si no haces nada de eso, no abras notebook.
+    </div>
+  </div>
+
+  <p>En este codelab usarás Workbench específicamente para: <strong>(1)</strong> graficar la distribución de variaciones salariales del Cap 3, <strong>(2)</strong> comparar dry-runs entre el anti-patrón y la versión optimizada, <strong>(3)</strong> visualizar la cohort retention curve del Cap 6. Todo lo demás vive en Dataform o BigQuery Studio.</p>
+
+  <h2>Convención: tres superficies de ejecución</h2>
+
+  <div class="callout tip">
+    <div class="callout-icon"></div>
+    <div class="callout-body">
+      <strong>Cómo ejecutar los bloques SQL del codelab</strong>
+      A partir de aquí, todos los bloques marcados como <code>SQL</code> funcionan en tres sitios. Elige el que más te apetezca según el contexto:
+      <ul style="margin-top:8px;">
+        <li><strong>Celda de notebook</strong> con <code>%%bigquery</code> al inicio. Bueno para exploración rápida y cuando quieres llevar el resultado a un DataFrame.</li>
+        <li><strong>Terminal de Cloud Shell o Workbench</strong> con <code>bq query --use_legacy_sql=false 'SELECT ...'</code>. Bueno para queries de una línea o cuando ya estás en consola.</li>
+        <li><strong>Editor SQL de la consola de BigQuery</strong>. Bueno cuando quieres ver el plan de ejecución, los bytes leídos o navegar el schema visualmente. Cuando una sección te pida abrir BQ console explícitamente, es por esto.</li>
+      </ul>
+      Los bloques con etiqueta tipo <code>definitions/algo.sqlx</code> van obligatoriamente en Dataform.
+    </div>
+  </div>
+
+  <h2>Verificación final</h2>
+
+  <div class="callout success">
+    <div class="callout-icon">✅</div>
+    <div class="callout-body">
+      <strong>Antes de pasar al cap 3</strong>
+      Confirma que tienes:
+      <ol style="margin-top:8px;">
+        <li>Notebook <code>sesion_04_career_path.ipynb</code> abierto y la celda 1 ejecutada sin errores.</li>
+        <li>Workspace de Dataform creado, con <code>workflow_settings.yaml</code> apuntando a tu proyecto (y <code>first_view.sqlx</code> / <code>second_view.sqlx</code> borrados).</li>
+        <li>Las tres tablas <code>silver_personio.*</code> accesibles con los conteos esperados.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="nav-inline">
+    <a href="#intro" class="btn-back">Atrás</a>
+    <a href="#window-functions" class="btn-next">Siguiente</a>
+  </div>
+</section>
+
+<!-- ===========================================================
+     3. WINDOW FUNCTIONS — placeholder
+     =========================================================== -->
+<section id="window-functions" class="chapter">
+  <h1 class="chapter-title">3. Window functions sobre salary_history</h1>
+
+  <p>En esta sección vas a comparar el salario de cada empleado contra el de su mes anterior usando <code>LAG</code> y a detectar variaciones salariales sin caer en el anti-patrón del self-join. Los conceptos que aprendas aquí los reutilizarás en el cap. 5 para detectar promociones sobre el SCD2.</p>
+
+  <h2>Por qué window functions</h2>
+
+  <p>Una pregunta del cliente: <em>"¿en qué meses cada empleado tuvo una subida salarial superior al 5%?"</em>. Con <code>GROUP BY</code> es imposible: el agrupamiento colapsa filas y se pierde la dimensión temporal. Las window functions, en cambio, calculan una columna nueva <strong>preservando todas las filas originales</strong>. Por eso son la herramienta correcta para análisis longitudinal de personas: comparar a alguien con su propio pasado, no con sus compañeros.</p>
+
+  <div class="callout tip">
+    <div class="callout-icon"></div>
+    <div class="callout-body">
+      <strong>Regla mental</strong>
+      <code>GROUP BY</code> agrega <em>entre</em> filas y las colapsa. <code>OVER (PARTITION BY ... ORDER BY ...)</code> calcula entre filas pero las mantiene. Si necesitas ver el detalle y un agregado a la vez, casi siempre es window function.
+    </div>
+  </div>
+
+  <h2>Paso 1: explorar fact_salary_history</h2>
+
+  <p>Antes de escribir window functions, echa un vistazo rápido a la tabla con la que vas a trabajar. <code>silver_personio.fact_salary_history</code> contiene snapshots mensuales de compensación de cada empleado durante 2025, construidos en el M2 a partir del CSV original de Personio. Empieza por una fila de muestra:</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-label">SQL · Inspeccionar fact_salary_history</span>
+      <button class="copy-btn">Copiar</button>
+    </div>
+<pre><code class="language-sql">SELECT
+  employee_code,
+  snapshot_month,
+  band,
+  base_salary_eur,
+  bonus_eur
+FROM `silver_personio.fact_salary_history`
+WHERE employee_code = (
+  SELECT employee_code
+  FROM `silver_personio.fact_salary_history`
+  ORDER BY snapshot_month
+  LIMIT 1
+)
+ORDER BY snapshot_month;</code></pre>
+  </div>
+
+  <p>Deberías ver entre 6 y 12 filas, todas del mismo empleado, una por mes. La granularidad de la tabla es <strong>una fila por empleado y mes</strong>. Ese orden temporal dentro de cada empleado es lo que hace que las window functions tengan sentido aquí.</p>
+
+  <h2>Paso 2: detectar variaciones salariales con LAG</h2>
+
+  <p>El operador <code>LAG(col)</code> devuelve el valor de <code>col</code> en la fila anterior dentro de la partición. Combinado con <code>PARTITION BY employee_code ORDER BY snapshot_month</code>, te da el salario del mes previo para cada empleado:</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-label">SQL · Detectar subidas salariales > 5%</span>
+      <button class="copy-btn">Copiar</button>
+    </div>
+<pre><code class="language-sql">WITH variaciones AS (
+  SELECT
+    employee_code,
+    snapshot_month,
+    base_salary_eur,
+    LAG(base_salary_eur) OVER (
+      PARTITION BY employee_code
+      ORDER BY snapshot_month
+    ) AS salario_mes_anterior
+  FROM `silver_personio.fact_salary_history`
+)
+SELECT
+  employee_code,
+  snapshot_month,
+  salario_mes_anterior,
+  base_salary_eur,
+  ROUND(SAFE_DIVIDE(base_salary_eur - salario_mes_anterior, salario_mes_anterior) * 100, 2) AS variacion_pct
+FROM variaciones
+WHERE salario_mes_anterior IS NOT NULL
+  AND base_salary_eur > salario_mes_anterior * 1.05
+ORDER BY variacion_pct DESC
+LIMIT 20;</code></pre>
+  </div>
+
+  <p>El filtro <code>salario_mes_anterior IS NOT NULL</code> es importante: <code>LAG</code> devuelve NULL en la primera fila de cada empleado (no hay mes anterior). Sin ese filtro, contarías la primera observación de cada empleado como una "variación" inexistente.</p>
+
+  <p>Resultado esperado sobre el dataset Personio: entre 8 y 15 filas, principalmente empleados que tuvieron una revisión salarial en mitad de año.</p>
+
+  <h2>Paso 3: el anti-patrón que no debes copiar</h2>
+
+  <p>Antes de window functions, este problema se resolvía con un self-join sobre la misma tabla con offset de 1 mes. Funciona, pero lee la tabla dos veces y escala mal. Ejecuta esta versión y compara los bytes leídos con el paso 2:</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-label">SQL · Anti-patrón con self-join</span>
+      <button class="copy-btn">Copiar</button>
+    </div>
+<pre><code class="language-sql">-- NO HACER ESTO EN PRODUCCIÓN
+SELECT
+  hoy.employee_code,
+  hoy.snapshot_month,
+  ayer.base_salary_eur AS salario_mes_anterior,
+  hoy.base_salary_eur,
+  ROUND(SAFE_DIVIDE(hoy.base_salary_eur - ayer.base_salary_eur, ayer.base_salary_eur) * 100, 2) AS variacion_pct
+FROM `silver_personio.fact_salary_history` hoy
+LEFT JOIN `silver_personio.fact_salary_history` ayer
+  ON hoy.employee_code = ayer.employee_code
+  AND ayer.snapshot_month = DATE_SUB(hoy.snapshot_month, INTERVAL 1 MONTH)
+WHERE ayer.base_salary_eur IS NOT NULL
+  AND hoy.base_salary_eur > ayer.base_salary_eur * 1.05
+ORDER BY variacion_pct DESC
+LIMIT 20;</code></pre>
+  </div>
+
+  <p>El resultado es el mismo. El coste, no. Mira el panel <strong>Job Information &gt; Bytes processed</strong> en BigQuery después de cada query:</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Patrón</th><th>Bytes leídos</th><th>Veces que escanea la tabla</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>LAG (window function)</td><td>~120 KB</td><td>1</td></tr>
+        <tr><td>Self-join con offset</td><td>~240 KB</td><td>2</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout warn">
+    <div class="callout-icon"></div>
+    <div class="callout-body">
+      <strong>Por qué importa en producción</strong>
+      Sobre los 1.189 registros de Personio la diferencia es invisible (céntimos). Sobre la tabla equivalente de un cliente real con 100k empleados y 5 años de histórico, el self-join multiplica por 2 los bytes facturados de cada job. Si la query corre cada noche detrás de un dashboard, el sobrecoste anual es real.
+    </div>
+  </div>
+
+  <h2>Paso 4: ROW_NUMBER y FIRST_VALUE</h2>
+
+  <p>Otras dos window functions que vas a usar muy pronto en el pipeline:</p>
+
+  <ul>
+    <li><strong><code>ROW_NUMBER()</code></strong>: numera las filas dentro de cada partición. Sirve para quedarte con la fila "primera" o "última" de cada grupo (por ejemplo, el snapshot más reciente de cada empleado).</li>
+    <li><strong><code>FIRST_VALUE(col)</code></strong>: devuelve el valor de <code>col</code> en la primera fila de la partición. Sirve para llevar el <em>baseline</em> al lado de cada fila (por ejemplo, el salario al hire).</li>
+  </ul>
+
+  <p>Esta query combina ambas para mostrar, junto al salario actual de cada empleado, su salario inicial y su variación acumulada:</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-label">SQL · ROW_NUMBER + FIRST_VALUE + QUALIFY</span>
+      <button class="copy-btn">Copiar</button>
+    </div>
+<pre><code class="language-sql">SELECT
+  employee_code,
+  snapshot_month,
+  band,
+  base_salary_eur,
+  FIRST_VALUE(base_salary_eur) OVER (
+    PARTITION BY employee_code
+    ORDER BY snapshot_month
+  ) AS salario_baseline,
+  ROUND(
+    SAFE_DIVIDE(
+      base_salary_eur - FIRST_VALUE(base_salary_eur) OVER (
+        PARTITION BY employee_code ORDER BY snapshot_month
+      ),
+      FIRST_VALUE(base_salary_eur) OVER (
+        PARTITION BY employee_code ORDER BY snapshot_month
+      )
+    ) * 100, 2
+  ) AS variacion_acumulada_pct,
+  ROW_NUMBER() OVER (
+    PARTITION BY employee_code
+    ORDER BY snapshot_month DESC
+  ) AS fila_desde_mas_reciente
+FROM `silver_personio.fact_salary_history`
+QUALIFY fila_desde_mas_reciente = 1
+ORDER BY variacion_acumulada_pct DESC;</code></pre>
+  </div>
+
+  <p>La cláusula <code>QUALIFY</code> es la forma <em>BigQuery-native</em> de filtrar por el resultado de una window function sin envolverla en un CTE intermedio. Aquí te quedas con una sola fila por empleado (la más reciente), comparada contra su salario inicial.</p>
+
+  <h2>Verificación final</h2>
+
+  <div class="callout success">
+    <div class="callout-icon"></div>
+    <div class="callout-body">
+      <strong>Antes de pasar al siguiente paso</strong>
+      Asegúrate de que sabes responder a estas tres preguntas con queries propias sobre <code>fact_salary_history</code>:
+      <ol style="margin-top:8px;">
+        <li>¿Cuántos empleados tuvieron alguna variación salarial en 2025?</li>
+        <li>¿Cuál fue la mayor subida porcentual mensual del dataset?</li>
+        <li>¿Qué empleado tiene el salario más alto en su snapshot más reciente?</li>
+      </ol>
+      Si las tres te salen sin volver a pegar fragmentos del codelab, dominas window functions a nivel suficiente para el resto del pipeline.
+    </div>
+  </div>
+
+  <div class="nav-inline">
+    <a href="#setup-dataform" class="btn-back">Atrás</a>
+    <a href="#scd2" class="btn-next">Siguiente</a>
+  </div>
+</section>
+
+<!-- ===========================================================
+     4. SCD2 con MERGE  ◄── DEMO COMPLETA
+     =========================================================== -->
+<section id="scd2" class="chapter">
+  <h1 class="chapter-title">4. Construir dim_employee_scd2 con MERGE</h1>
+
+  <p>En esta sección vas a construir tu primera tabla del pipeline: <strong>dim_employee_scd2</strong>. Es una tabla histórica que captura cada cambio en los atributos del empleado (banda, departamento, manager, país) como una fila nueva, con fechas de validez. Esto se llama <strong>Slowly Changing Dimension Tipo 2</strong> (SCD2) y es el patrón estándar para responder a preguntas del tipo "¿cuál era la banda de Juan el 15 de marzo de 2024?".</p>
+
+  <h2>Qué tabla vas a crear</h2>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Columna</th>
+          <th>Tipo</th>
+          <th>Significado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><code>employee_code</code></td><td>STRING NOT NULL</td><td>Identificador del empleado</td></tr>
+        <tr><td><code>country</code></td><td>STRING</td><td>País en este intervalo de tiempo</td></tr>
+        <tr><td><code>band</code></td><td>STRING</td><td>Banda salarial (P1-P3, E1-E2, M2-M3)</td></tr>
+        <tr><td><code>department</code></td><td>STRING</td><td>Departamento</td></tr>
+        <tr><td><code>manager_code</code></td><td>STRING</td><td>Manager en este intervalo</td></tr>
+        <tr><td><code>effective_from</code></td><td>DATE NOT NULL</td><td>Fecha desde la que esta versión es válida</td></tr>
+        <tr><td><code>effective_to</code></td><td>DATE</td><td>Fecha hasta la que esta versión fue válida (NULL si es la actual)</td></tr>
+        <tr><td><code>is_current</code></td><td>BOOL NOT NULL</td><td>TRUE si esta es la versión vigente del empleado</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Paso 1: crear el SQLX en Dataform</h2>
+
+  <p>Crea un nuevo archivo en tu workspace Dataform en la ruta <code>definitions/dim_employee_scd2.sqlx</code> con el siguiente contenido. Este SQLX define la tabla particionada por <code>effective_from</code> y clusterizada por <code>employee_code</code>:</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-label file">definitions/dim_employee_scd2.sqlx</span>
+      <button class="copy-btn">Copiar</button>
+    </div>
+<pre><code class="language-sql">config {
+  type: "incremental",
+  schema: "career_analytics",
+  description: "Dimensión SCD2 del empleado. Una fila por intervalo de tiempo en el que sus atributos (banda, depto, manager) fueron constantes.",
+  bigquery: {
+    partitionBy: "effective_from",
+    clusterBy: ["employee_code", "is_current"]
+  },
+  assertions: {
+    nonNull: ["employee_code", "effective_from", "is_current"],
+    uniqueKey: ["employee_code", "effective_from"]
+  }
+}
+
+-- Primera ejecución: poblar desde dim_employee con effective_from = hire_date
+-- Ejecuciones siguientes: MERGE con cambios detectados en silver_personio.dim_employee
+
+MERGE ${self()} t
+USING (
+  SELECT
+    employee_code,
+    country,
+    band,
+    department,
+    manager_code,
+    CURRENT_DATE() AS effective_from
+  FROM `${dataform.projectConfig.defaultDatabase}.silver_personio.dim_employee`
+) s
+ON t.employee_code = s.employee_code
+   AND t.is_current = TRUE
+
+-- Si el empleado existe en SCD2 y algún atributo cambió: cerrar la versión vigente
+WHEN MATCHED AND (
+  COALESCE(t.country, '') != COALESCE(s.country, '')
+  OR COALESCE(t.band, '') != COALESCE(s.band, '')
+  OR COALESCE(t.department, '') != COALESCE(s.department, '')
+  OR COALESCE(t.manager_code, '') != COALESCE(s.manager_code, '')
+) THEN
+  UPDATE SET
+    effective_to = s.effective_from,
+    is_current = FALSE
+
+-- Empleado nuevo o cambio detectado: insertar versión nueva
+WHEN NOT MATCHED THEN
+  INSERT (employee_code, country, band, department, manager_code,
+          effective_from, effective_to, is_current)
+  VALUES (s.employee_code, s.country, s.band, s.department, s.manager_code,
+          s.effective_from, NULL, TRUE);
+</code></pre>
+  </div>
+
+  <h2>Paso 2: ¿qué hace este MERGE?</h2>
+
+  <p>El MERGE es la pieza central del SCD2. Vamos paso a paso:</p>
+
+  <ol>
+    <li><strong>Source (s)</strong>: la "foto actual" de cada empleado en <code>silver_personio.dim_employee</code>. Cada empleado aparece una sola vez.</li>
+    <li><strong>Target (t)</strong>: la tabla histórica que estás construyendo. Un mismo empleado puede aparecer N veces si ha cambiado N-1 veces de banda/departamento/manager.</li>
+    <li><strong>JOIN ON</strong>: solo nos interesa la versión vigente del empleado en la tabla histórica (<code>is_current = TRUE</code>).</li>
+    <li><strong>WHEN MATCHED AND (cambió algo)</strong>: si algún atributo difiere, cerramos la versión vigente con un <code>effective_to</code> y la marcamos <code>is_current = FALSE</code>.</li>
+    <li><strong>WHEN NOT MATCHED</strong>: cubre dos casos. Empleado nuevo (no existe en la tabla histórica). O empleado existente cuyo MATCHED se cerró en el paso anterior y ahora insertamos su versión nueva.</li>
+  </ol>
+
+  <div class="callout warn">
+    <div class="callout-icon"></div>
+    <div class="callout-body">
+      <strong>Trampa común con NULLs</strong>
+      El operador <code>!=</code> devuelve NULL cuando uno de los operandos es NULL. Si no envuelves los atributos en <code>COALESCE(..., '')</code>, los cambios entre "valor" y NULL se te escaparán silenciosamente. Es un bug clásico de SCD2 que solo descubres meses después cuando los analistas reportan números raros.
+    </div>
+  </div>
+
+  <h2>Paso 3: ejecutar el SQLX</h2>
+
+  <p>En la consola de Dataform, haz click en <strong>Start execution</strong> y selecciona la action <code>dim_employee_scd2</code>. La primera ejecución poblará la tabla con todos los empleados como versión inicial:</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-label">SQL · Validar resultados en BigQuery</span>
+      <button class="copy-btn">Copiar</button>
+    </div>
+<pre><code class="language-sql">-- Verifica que la primera ejecución pobló todos los empleados activos
+SELECT
+  COUNT(*) AS total_filas,
+  COUNT(DISTINCT employee_code) AS empleados_unicos,
+  SUM(CASE WHEN is_current THEN 1 ELSE 0 END) AS versiones_vigentes,
+  MIN(effective_from) AS fecha_min,
+  MAX(effective_from) AS fecha_max
+FROM `career_analytics.dim_employee_scd2`;</code></pre>
+  </div>
+
+  <p>Resultado esperado en la primera ejecución sobre el dataset Personio:</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>total_filas</th>
+          <th>empleados_unicos</th>
+          <th>versiones_vigentes</th>
+          <th>fecha_min</th>
+          <th>fecha_max</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>209</td><td>209</td><td>209</td><td>2026-05-11</td><td>2026-05-11</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>En la primera ejecución hay tantas filas como empleados (209), todas con <code>is_current = TRUE</code>. Esto es esperado: la tabla histórica empieza vacía y todo es "versión actual".</p>
+
+  <h2>Paso 4: simular un cambio y reejecutar</h2>
+
+  <p>Para probar que el MERGE funciona correctamente, vamos a simular un cambio de banda en un empleado y reejecutar el SQLX. Este UPDATE temporal sobre <code>silver_personio.dim_employee</code> simula lo que ocurriría tras una ronda de promociones:</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-label">SQL · Simular promoción</span>
+      <button class="copy-btn">Copiar</button>
+    </div>
+<pre><code class="language-sql">-- Tomar un empleado P2 y promocionarlo a P3
+UPDATE `silver_personio.dim_employee`
+SET band = 'P3'
+WHERE employee_code = (
+  SELECT employee_code
+  FROM `silver_personio.dim_employee`
+  WHERE band = 'P2'
+  LIMIT 1
+);</code></pre>
+  </div>
+
+  <p>Ahora reejecuta el SQLX <code>dim_employee_scd2</code> en Dataform. Y vuelve a contar:</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-label">SQL · Ver el cambio histórico</span>
+      <button class="copy-btn">Copiar</button>
+    </div>
+<pre><code class="language-sql">-- Buscar empleados con más de una versión histórica
+SELECT
+  employee_code,
+  band,
+  effective_from,
+  effective_to,
+  is_current
+FROM `career_analytics.dim_employee_scd2`
+WHERE employee_code IN (
+  SELECT employee_code
+  FROM `career_analytics.dim_employee_scd2`
+  GROUP BY employee_code
+  HAVING COUNT(*) > 1
+)
+ORDER BY employee_code, effective_from;</code></pre>
+  </div>
+
+  <p>Deberías ver al empleado promocionado con <strong>dos filas</strong>: la versión P2 cerrada (<code>effective_to</code> con la fecha de hoy, <code>is_current = FALSE</code>) y la versión P3 abierta (<code>effective_to = NULL</code>, <code>is_current = TRUE</code>).</p>
+
+  <div class="callout success">
+    <div class="callout-icon"></div>
+    <div class="callout-body">
+      <strong>Lo que acabas de construir</strong>
+      Una tabla histórica completa que permite reconstruir el estado del empleado en cualquier momento del pasado con una query simple: <code>WHERE effective_from &lt;= '2024-06-15' AND (effective_to IS NULL OR effective_to &gt; '2024-06-15')</code>. Esto es la base del análisis longitudinal que viene en las siguientes secciones.
+    </div>
+  </div>
+
+  <h2>Paso 5: Dataform garantiza la idempotencia</h2>
+
+  <p>Una pregunta razonable: ¿qué pasa si ejecutas el SQLX dos veces seguidas sin que haya cambios reales? La respuesta: <strong>nada</strong>. El bloque <code>WHEN MATCHED AND (algo cambió)</code> garantiza que solo se inserta una versión nueva cuando hay cambio real. La idempotencia es responsabilidad del SQL, no del orquestador.</p>
+
+  <div class="callout tip">
+    <div class="callout-icon"></div>
+    <div class="callout-body">
+      <strong>Conexión con M5 (orquestación)</strong>
+      Cloud Workflows puede invocar este SQLX cada noche sin riesgo. Si <code>silver_personio.dim_employee</code> no cambió, la tabla histórica no crece. Si hubo cambios, los captura automáticamente. Esa es la separación clean: Workflows decide cuándo, Dataform decide cómo.
+    </div>
+  </div>
+
+  <div class="nav-inline">
+    <a href="#window-functions" class="btn-back">Atrás</a>
+    <a href="#promotions" class="btn-next">Siguiente</a>
+  </div>
+</section>
+
+<!-- ===========================================================
+     5-12: PLACEHOLDERS
+     =========================================================== -->
+<section id="promotions" class="chapter">
+  <h1 class="chapter-title">5. Promociones y métricas temporales</h1>
+
+  <p>En esta sección vas a usar lo que aprendiste en el cap 3 (window functions) sobre la tabla histórica del cap 4 (SCD2) para construir <code>fact_promotions</code>: una tabla con una fila por cada cambio de banda. Después le añadirás dos métricas temporales clave para People Analytics: <strong>tenure</strong> (tiempo total en la empresa) y <strong>time-in-band</strong> (tiempo desde la última promoción).</p>
+
+  <h2>Paso 1: detectar transiciones con LAG sobre el SCD2</h2>
+
+  <p>El SCD2 ya tiene una fila por cada periodo en el que la banda del empleado fue constante. Si ordenas por <code>effective_from</code> dentro de cada empleado y comparas con la fila anterior usando <code>LAG</code>, cualquier diferencia de banda es una transición. Crea este SQLX en Dataform:</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-label file">definitions/fact_promotions.sqlx</span>
+      <button class="copy-btn">Copiar</button>
+    </div>
+<pre><code class="language-sql">config {
+  type: "table",
+  schema: "career_analytics",
+  description: "Una fila por cada transición de banda en la carrera del empleado. Tipos: HIRE, PROMOCION, DEGRADACION, CAMBIO_LATERAL.",
+  bigquery: {
+    partitionBy: "DATE(transition_date)",
+    clusterBy: ["employee_code", "transition_type"]
+  },
+  assertions: {
+    nonNull: ["employee_code", "transition_date", "band_to", "transition_type"]
+  }
+}
+
+WITH transiciones AS (
+  SELECT
+    employee_code,
+    band AS band_to,
+    LAG(band) OVER (PARTITION BY employee_code ORDER BY effective_from) AS band_from,
+    department,
+    LAG(department) OVER (PARTITION BY employee_code ORDER BY effective_from) AS department_from,
+    effective_from AS transition_date
+  FROM `${dataform.projectConfig.defaultDatabase}.career_analytics.dim_employee_scd2`
+)
+SELECT
+  employee_code,
+  transition_date,
+  band_from,
+  band_to,
+  department_from,
+  department AS department_to,
+  CASE
+    WHEN band_from IS NULL THEN 'HIRE'
+    WHEN SAFE_CAST(SUBSTR(band_to, 2) AS INT64) > SAFE_CAST(SUBSTR(band_from, 2) AS INT64) THEN 'PROMOCION'
+    WHEN SAFE_CAST(SUBSTR(band_to, 2) AS INT64) < SAFE_CAST(SUBSTR(band_from, 2) AS INT64) THEN 'DEGRADACION'
+    WHEN band_from = band_to AND department_from != department THEN 'CAMBIO_LATERAL'
+    ELSE 'SIN_CAMBIO'
+  END AS transition_type
+FROM transiciones
+WHERE band_from IS NULL OR band_from != band_to OR department_from != department;</code></pre>
+  </div>
+
+  <p>El truco está en <code>LAG(band) OVER (PARTITION BY employee_code ORDER BY effective_from)</code>: te da la banda anterior dentro del histórico de cada empleado. La primera fila del empleado tiene <code>band_from = NULL</code>, que clasificamos como <code>HIRE</code> (es la entrada inicial al SCD2, no una transición real).</p>
+
+  <p>El <code>SUBSTR(band, 2)</code> extrae el número de la banda ("P3" → "3") para poder comparar P2 vs P3 numéricamente. Funciona para nuestro esquema P1-P3/E1-E2/M2-M3 porque todas las bandas son <em>letra + número</em>. Si tu cliente usa otro esquema (Senior I/II/III, por ejemplo) tendrás que adaptar la lógica.</p>
+
+  <p>Ejecuta el SQLX desde Dataform y valida en tu notebook:</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-label">SQL · Validar fact_promotions</span>
+      <button class="copy-btn">Copiar</button>
+    </div>
+<pre><code class="language-sql">SELECT transition_type, COUNT(*) AS eventos
+FROM `career_analytics.fact_promotions`
+GROUP BY transition_type
+ORDER BY eventos DESC;</code></pre>
+  </div>
+
+  <p>Sobre el dataset Personio sin haber simulado más cambios que el del cap 4, deberías ver alrededor de 209 <code>HIRE</code> y 1 o 2 <code>PROMOCION</code> (la que simulaste al promocionar a un P2 a P3).</p>
+
+  <h2>Paso 2: tenure desde la fecha de hire</h2>
+
+  <p>El <strong>tenure</strong> es el tiempo total que un empleado lleva en la empresa, medido desde su <code>hire_date</code>. Sirve para segmentar análisis (gente con menos de 6 meses no se evalúa igual que veteranos) y para el cohort retention que viene en el cap 6. Calcúlalo con <code>DATE_DIFF</code>:</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-label">SQL · Tenure por empleado (top 10)</span>
+      <button class="copy-btn">Copiar</button>
+    </div>
+<pre><code class="language-sql">SELECT
+  employee_code,
+  hire_date,
+  DATE_DIFF(CURRENT_DATE(), hire_date, MONTH) AS tenure_meses,
+  DATE_DIFF(CURRENT_DATE(), hire_date, YEAR)  AS tenure_anios
+FROM `silver_personio.dim_employee`
+WHERE status = 'active'
+ORDER BY tenure_meses DESC
+LIMIT 10;</code></pre>
+  </div>
+
+  <p>Deberías ver el top 10 de empleados con mayor antigüedad. La diferencia entre <code>MONTH</code> y <code>YEAR</code> en <code>DATE_DIFF</code> no es una división: cada uno cuenta el número de unidades cruzadas por completo. Por eso un empleado con tenure de 18 meses sale como 1 año, no 1.5.</p>
+
+  <h2>Paso 3: time-in-band desde la última promoción</h2>
+
+  <p>El <strong>time-in-band</strong> mide cuánto lleva el empleado en su banda actual. Es la métrica clave para detectar gente "atascada": un P2 que lleva 4 años en P2 sin haber subido es candidato a marcharse o a una conversación de carrera. Se calcula desde el <code>effective_from</code> de la versión vigente en el SCD2:</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-label">SQL · Empleados con 3+ años en la misma banda</span>
+      <button class="copy-btn">Copiar</button>
+    </div>
+<pre><code class="language-sql">SELECT
+  employee_code,
+  band,
+  effective_from AS desde,
+  DATE_DIFF(CURRENT_DATE(), effective_from, MONTH) AS meses_en_banda
+FROM `career_analytics.dim_employee_scd2`
+WHERE is_current = TRUE
+  AND DATE_DIFF(CURRENT_DATE(), effective_from, MONTH) >= 36
+ORDER BY meses_en_banda DESC;</code></pre>
+  </div>
+
+  <p>El filtro <code>&gt;= 36</code> te enseña empleados con 3 años o más en la misma banda. Sobre el dataset Personio aparecerán bastantes (es lo normal: la mayoría no han cambiado de banda en los datos disponibles), pero la query es exactamente la misma que correrías sobre datos reales con histórico de 5+ años para detectar los casos anómalos.</p>
+
+  <div class="callout pa">
+    <div class="callout-icon"></div>
+    <div class="callout-body">
+      <strong>Insight de People Analytics</strong>
+      Combinar <code>tenure</code> con <code>time-in-band</code> da una métrica derivada útil: <em>"% del tenure pasado en la banda actual"</em>. Si un empleado lleva 8 años en la empresa y los últimos 6 en la misma banda, el 75% de su tenure ha sido sin progresión. Ese ratio es mucho mejor predictor de fuga que cualquiera de los dos por separado.
+    </div>
+  </div>
+
+  <h2>Verificación final</h2>
+
+  <div class="callout success">
+    <div class="callout-icon"></div>
+    <div class="callout-body">
+      <strong>Antes de pasar al cap 6</strong>
+      Confirma que tienes:
+      <ol style="margin-top:8px;">
+        <li>Tabla <code>career_analytics.fact_promotions</code> creada y con al menos los HIRE iniciales y la PROMOCION simulada del cap 4.</li>
+        <li>Capacidad para calcular tenure y time-in-band en una query de una sola pasada (sin pegar el codelab).</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="nav-inline">
+    <a href="#scd2" class="btn-back">Atrás</a>
+    <a href="#career-events" class="btn-next">Siguiente</a>
+  </div>
+</section>
+
+<section id="career-events" class="chapter">
+  <h1 class="chapter-title">6. fact_career_events: CTEs y cohort retention</h1>
+
+  <p>Hasta aquí tienes datos cargados (<code>silver_personio</code>), un histórico de bandas (<code>dim_employee_scd2</code>) y transiciones detectadas (<code>fact_promotions</code>). En esta sección vas a unir todo en una tabla unificada de eventos de carrera (<code>fact_career_events</code>) usando CTEs estructurados, y encima de eso vas a montar el análisis de cohort retention que pidió el cliente.</p>
+
+  <h2>Por qué CTEs en vez de subqueries anidadas</h2>
+
+  <p>Una query de 200 líneas sin CTEs es ilegible. Una query de 200 líneas con 6-7 CTEs nombrados se lee como un guión: cada CTE responde a una pregunta concreta y la siguiente la usa. Cuando un compañero abre tu SQL meses después, los nombres de los CTE le explican la lógica antes que el código.</p>
+
+  <h2>Paso 1: construir fact_career_events con CTEs</h2>
+
+  <p>Vas a unir tres tipos de evento (hires, transiciones de banda, bajas) en una tabla con un schema común. Crea este SQLX:</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-label file">definitions/fact_career_events.sqlx</span>
+      <button class="copy-btn">Copiar</button>
+    </div>
+<pre><code class="language-sql">config {
+  type: "table",
+  schema: "career_analytics",
+  description: "Tabla unificada de eventos de carrera del empleado: HIRE, PROMOCION, DEGRADACION, CAMBIO_LATERAL, BAJA.",
+  bigquery: {
+    partitionBy: "DATE(event_date)",
+    clusterBy: ["employee_code", "event_type"]
+  }
+}
+
+-- 1) Empleados activos: base sobre la que vamos a buscar eventos
+WITH empleados_activos AS (
+  SELECT employee_code, hire_date, country, band AS band_actual
+  FROM `${dataform.projectConfig.defaultDatabase}.silver_personio.dim_employee`
+),
+
+-- 2) Eventos de contratación: el primer registro de cada empleado
+eventos_hire AS (
+  SELECT
+    e.employee_code,
+    e.hire_date AS event_date,
+    'HIRE' AS event_type,
+    CAST(NULL AS STRING) AS band_from,
+    e.band_actual AS band_to,
+    e.country
+  FROM empleados_activos e
+),
+
+-- 3) Eventos de transición: vienen de fact_promotions
+eventos_transicion AS (
+  SELECT
+    p.employee_code,
+    p.transition_date AS event_date,
+    p.transition_type AS event_type,
+    p.band_from,
+    p.band_to,
+    e.country
+  FROM `${dataform.projectConfig.defaultDatabase}.career_analytics.fact_promotions` p
+  JOIN empleados_activos e USING (employee_code)
+  WHERE p.transition_type IN ('PROMOCION', 'DEGRADACION', 'CAMBIO_LATERAL')
+),
+
+-- 4) Eventos de baja: empleados con status != active
+eventos_baja AS (
+  SELECT
+    employee_code,
+    COALESCE(termination_date, CURRENT_DATE()) AS event_date,
+    'BAJA' AS event_type,
+    band AS band_from,
+    CAST(NULL AS STRING) AS band_to,
+    country
+  FROM `${dataform.projectConfig.defaultDatabase}.silver_personio.dim_employee`
+  WHERE status != 'active'
+),
+
+-- 5) Consolidar todos los eventos con el mismo schema
+eventos_consolidados AS (
+  SELECT * FROM eventos_hire
+  UNION ALL
+  SELECT * FROM eventos_transicion
+  UNION ALL
+  SELECT * FROM eventos_baja
+)
+
+-- 6) Output final con secuencia cronológica por empleado
+SELECT
+  employee_code,
+  event_date,
+  event_type,
+  band_from,
+  band_to,
+  country,
+  ROW_NUMBER() OVER (PARTITION BY employee_code ORDER BY event_date) AS event_seq
+FROM eventos_consolidados
+ORDER BY employee_code, event_date;</code></pre>
+  </div>
+
+  <p>Cada CTE tiene una responsabilidad clara y un nombre que la describe. Si mañana tienes que añadir un nuevo tipo de evento (por ejemplo, cambios de país por relocation), añades un CTE <code>eventos_relocation</code> y lo metes al UNION. No tocas el resto.</p>
+
+  <p>Ejecútalo en Dataform y valida en tu notebook:</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-label">SQL · Validar fact_career_events</span>
+      <button class="copy-btn">Copiar</button>
+    </div>
+<pre><code class="language-sql">SELECT event_type, COUNT(*) AS eventos
+FROM `career_analytics.fact_career_events`
+GROUP BY event_type
+ORDER BY eventos DESC;</code></pre>
+  </div>
+
+  <h2>Paso 2: cohort retention por trimestre de hire</h2>
+
+  <p>Ahora la pregunta de negocio: <em>"¿qué cohorte de hires se queda más tiempo?"</em>. Una cohorte es un grupo de empleados con algo en común; en este caso, el trimestre en el que entraron a la empresa. Para cada cohorte calcularás qué porcentaje sigue activo a los 3, 6, 9 y 12 meses desde su hire.</p>
+
+  <p>La lógica:</p>
+
+  <ol>
+    <li>Asignar a cada empleado su cohorte de hire con <code>DATE_TRUNC(hire_date, QUARTER)</code>.</li>
+    <li>Calcular cuántos meses lleva activo cada uno: si tiene <code>BAJA</code> hasta esa fecha, si no hasta hoy.</li>
+    <li>Para cada cohorte, contar cuántos empleados llegaron a 3/6/9/12 meses sin causar baja.</li>
+  </ol>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-label">SQL · Cohort retention por trimestre de hire</span>
+      <button class="copy-btn">Copiar</button>
+    </div>
+<pre><code class="language-sql">WITH base AS (
+  SELECT
+    employee_code,
+    DATE_TRUNC(MIN(CASE WHEN event_type = 'HIRE' THEN event_date END), QUARTER) AS cohorte,
+    MIN(CASE WHEN event_type = 'HIRE' THEN event_date END) AS fecha_hire,
+    MIN(CASE WHEN event_type = 'BAJA' THEN event_date END) AS fecha_baja
+  FROM `career_analytics.fact_career_events`
+  GROUP BY employee_code
+),
+con_supervivencia AS (
+  SELECT
+    cohorte,
+    employee_code,
+    DATE_DIFF(COALESCE(fecha_baja, CURRENT_DATE()), fecha_hire, MONTH) AS meses_activo
+  FROM base
+  WHERE fecha_hire IS NOT NULL
+)
+SELECT
+  cohorte,
+  COUNT(*) AS tamano_cohorte,
+  ROUND(100 * COUNTIF(meses_activo >= 3)  / COUNT(*), 1) AS retencion_3m_pct,
+  ROUND(100 * COUNTIF(meses_activo >= 6)  / COUNT(*), 1) AS retencion_6m_pct,
+  ROUND(100 * COUNTIF(meses_activo >= 9)  / COUNT(*), 1) AS retencion_9m_pct,
+  ROUND(100 * COUNTIF(meses_activo >= 12) / COUNT(*), 1) AS retencion_12m_pct
+FROM con_supervivencia
+GROUP BY cohorte
+HAVING COUNT(*) >= 5
+ORDER BY cohorte;</code></pre>
+  </div>
+
+  <p>El <code>HAVING COUNT(*) >= 5</code> al final no es decoración: es <strong>k-anonimidad</strong>. Cohortes con menos de 5 empleados no se exponen porque sería trivial reidentificar a la persona concreta cuyos datos estás mirando. Es una protección obligatoria cuando el output va a un dashboard que verá gente fuera del equipo de RRHH.</p>
+
+  <div class="callout warn">
+    <div class="callout-icon"></div>
+    <div class="callout-body">
+      <strong>Cuidado al interpretar las cohortes recientes</strong>
+      Las cohortes más recientes tendrán <code>retencion_12m_pct</code> bajo de forma engañosa porque aún no ha pasado un año desde su hire. No es un bug: es que la métrica todavía no es calculable. En un dashboard real conviene marcar esas cohortes explícitamente como "datos incompletos" para no inducir a comparaciones sesgadas.
+    </div>
+  </div>
+
+  <h2>Verificación final</h2>
+
+  <div class="callout success">
+    <div class="callout-icon"></div>
+    <div class="callout-body">
+      <strong>Antes de pasar al cap 7</strong>
+      Confirma que tienes:
+      <ol style="margin-top:8px;">
+        <li><code>career_analytics.fact_career_events</code> existe con HIREs, transiciones y bajas en filas separadas.</li>
+        <li>Has ejecutado el cohort retention y entiendes por qué algunas cohortes salen con porcentajes bajos en los meses largos.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="nav-inline">
+    <a href="#promotions" class="btn-back">Atrás</a>
+    <a href="#capa-semantica" class="btn-next">Siguiente</a>
+  </div>
+</section>
+
+<section id="capa-semantica" class="chapter">
+  <h1 class="chapter-title">7. Capa semántica, tests y cierre</h1>
+
+  <p>Última sección. Vas a empaquetar todo lo construido en una capa de consumo lista para Looker Studio (<code>v_career_path_dashboard</code>), añadirás tests automáticos en Dataform que detectan problemas de calidad antes de que lleguen al dashboard, y cerraremos con una nota sobre cómo conecta con el M14.</p>
+
+  <h2>Paso 1: UDF reutilizable tenure_bucket</h2>
+
+  <p>El concepto de <strong>capa semántica</strong> es: cada métrica de negocio se define <em>una sola vez</em> en un sitio y el resto del pipeline (vistas, dashboards, queries ad-hoc) la consume desde ahí. Sin capa semántica, cada analista escribe su propia versión de "tenure_bucket" y los números nunca cuadran entre dashboards.</p>
+
+  <p>Empieza por una UDF persistente que clasifica empleados por antigüedad. Crea este SQLX:</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-label file">definitions/udf_tenure_bucket.sqlx</span>
+      <button class="copy-btn">Copiar</button>
+    </div>
+<pre><code class="language-sql">config {
+  type: "operations",
+  hasOutput: false,
+  description: "UDF persistente: clasifica tenure en meses en buckets estándar usados en todo el pipeline."
+}
+
+CREATE OR REPLACE FUNCTION `${dataform.projectConfig.defaultDatabase}.career_analytics.tenure_bucket`(meses INT64)
+RETURNS STRING
+AS (
+  CASE
+    WHEN meses < 6   THEN '0-6m'
+    WHEN meses < 12  THEN '6-12m'
+    WHEN meses < 24  THEN '1-2y'
+    WHEN meses < 60  THEN '2-5y'
+    ELSE '5y+'
+  END
+);</code></pre>
+  </div>
+
+  <p>El bloque <code>type: "operations"</code> de Dataform sirve para statements DDL puros (CREATE FUNCTION, CREATE PROCEDURE) que no producen una tabla. <code>hasOutput: false</code> le dice a Dataform que no la trate como nodo del DAG con dependientes.</p>
+
+  <h2>Paso 2: vista v_career_path_dashboard</h2>
+
+  <p>Ahora la vista que consumirá Looker Studio. Solo expone agregados, nunca PII individual:</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-label file">definitions/v_career_path_dashboard.sqlx</span>
+      <button class="copy-btn">Copiar</button>
+    </div>
+<pre><code class="language-sql">config {
+  type: "view",
+  schema: "career_analytics",
+  description: "Capa semántica para Looker Studio. Agregados por país, banda y tenure_bucket. K-anonimidad >= 5."
+}
+
+SELECT
+  e.country,
+  e.band,
+  `${dataform.projectConfig.defaultDatabase}.career_analytics.tenure_bucket`(
+    DATE_DIFF(CURRENT_DATE(), e.hire_date, MONTH)
+  ) AS tenure_bucket,
+  COUNT(*) AS headcount,
+  COUNTIF(p.transition_type = 'PROMOCION') AS promociones_ultimo_anio
+FROM `${dataform.projectConfig.defaultDatabase}.silver_personio.dim_employee` e
+LEFT JOIN `${dataform.projectConfig.defaultDatabase}.career_analytics.fact_promotions` p
+  ON e.employee_code = p.employee_code
+  AND p.transition_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 12 MONTH)
+WHERE e.status = 'active'
+GROUP BY e.country, e.band, tenure_bucket
+HAVING COUNT(*) >= 5;</code></pre>
+  </div>
+
+  <p>Tres cosas importantes en esta vista:</p>
+
+  <ul>
+    <li>Llama a la UDF <code>tenure_bucket</code> en vez de duplicar el <code>CASE</code>. Si mañana cambias los umbrales de los buckets, los cambias en la UDF y todos los dashboards se actualizan a la vez.</li>
+    <li>El <code>HAVING COUNT(*) >= 5</code> es la misma protección de k-anonimidad del cap 6, aplicada también aquí para que la vista nunca exponga celdas con menos de 5 empleados.</li>
+    <li>Es una <code>view</code> (no <code>table</code>): cada vez que Looker Studio la consulta, BigQuery recalcula. Si el dashboard recibe muchos hits, conviene cambiarla a <code>type: "table"</code> con refresh diario via Cloud Workflows (lo vimos en M5).</li>
+  </ul>
+
+  <h2>Paso 3: tests automáticos con assertions</h2>
+
+  <p>Hasta ahora has confiado en que las queries son correctas porque las has revisado tú. En producción no funciona así: los datos cambian todos los días y un cambio en el origen puede romper silenciosamente alguna premisa de tu pipeline. Las assertions de Dataform son tests SQL que se ejecutan después de cada SQLX y fallan ruidosamente cuando algo no encaja.</p>
+
+  <p>Ya has visto assertions inline en los <code>config</code> de los SQLX anteriores (<code>nonNull</code>, <code>uniqueKey</code>). Ahora añade una assertion <em>custom</em> con SQL libre, que es la pieza más potente. Crea este archivo:</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-label file">definitions/assert_band_after_hire.sqlx</span>
+      <button class="copy-btn">Copiar</button>
+    </div>
+<pre><code class="language-sql">config {
+  type: "assertion",
+  description: "Ningún empleado puede tener una banda asignada con effective_from anterior a su hire_date."
+}
+
+SELECT
+  s.employee_code,
+  s.effective_from,
+  e.hire_date
+FROM `${dataform.projectConfig.defaultDatabase}.career_analytics.dim_employee_scd2` s
+JOIN `${dataform.projectConfig.defaultDatabase}.silver_personio.dim_employee` e
+  USING (employee_code)
+WHERE s.effective_from < e.hire_date;</code></pre>
+  </div>
+
+  <p>La regla: <strong>una assertion falla si la query devuelve filas</strong>. Si el SELECT no devuelve nada, todo bien. Si devuelve aunque sea una fila, Dataform marca el run como fallido y bloquea los SQLX dependientes hasta que se arregle. Esto es tu seguridad de que el pipeline no propaga datos rotos al dashboard.</p>
+
+  <div class="callout tip">
+    <div class="callout-icon"></div>
+    <div class="callout-body">
+      <strong>Qué hacer cuando una assertion falla en producción</strong>
+      Lo primero, no la borres ni la silencies. La assertion está diciéndote que una premisa que dabas por cierta ya no lo es. Investiga el dato concreto que la disparó (la query del assertion te lo da en la pestaña <em>Failed assertions</em> de Dataform). Decide: ¿es un bug de origen que hay que escalar a HRIS? ¿o la regla de negocio cambió y la assertion está desactualizada? Solo cuando lo sepas, ajustas.
+    </div>
+  </div>
+
+  <h2>Paso 4: cleanup opcional</h2>
+
+  <p>Si vas a dejar el proyecto del curso sin usar varios días y quieres ahorrar storage, puedes borrar el dataset <code>career_analytics</code> entero. <strong>No lo hagas si quieres conectar Looker Studio en el M14</strong>:</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-label">SQL · Cleanup (opcional)</span>
+      <button class="copy-btn">Copiar</button>
+    </div>
+<pre><code class="language-sql">-- ATENCIÓN: esto borra todas las tablas y vistas creadas en este codelab.
+-- Si vas a continuar con M14 (Looker Studio), NO lo ejecutes.
+DROP SCHEMA IF EXISTS `career_analytics` CASCADE;
+DROP SCHEMA IF EXISTS `dataform_assertions` CASCADE;</code></pre>
+  </div>
+
+  <h2>¡Has terminado!</h2>
+
+  <p>Has construido, paso a paso, un pipeline real de Career Path Analytics sobre los datos anonimizados de Personio. Lo que tienes ahora en tu proyecto:</p>
+
+  <ul>
+    <li><strong>5 SQLX versionados</strong> en Dataform: <code>dim_employee_scd2</code>, <code>fact_promotions</code>, <code>fact_career_events</code>, <code>v_career_path_dashboard</code> y la UDF <code>tenure_bucket</code>.</li>
+    <li><strong>Assertions automáticas</strong> embebidas en cada SQLX más una assertion custom que valida la consistencia banda-vs-hire.</li>
+    <li><strong>Capa semántica</strong> (<code>v_career_path_dashboard</code>) lista para que Looker Studio se conecte sin ver salarios ni nombres.</li>
+  </ul>
+
+  <h2>Temas abordados</h2>
+
+  <ul>
+    <li>Window functions (LAG, ROW_NUMBER, FIRST_VALUE) para análisis longitudinal.</li>
+    <li>SCD2 con MERGE idempotente para histórico de empleados.</li>
+    <li>Métricas temporales con DATE_DIFF y DATE_TRUNC (tenure, time-in-band, cohortes).</li>
+    <li>CTEs estructurados para queries legibles y mantenibles.</li>
+    <li>Cohort retention con k-anonimidad.</li>
+    <li>UDFs y vistas como capa semántica autorizada.</li>
+    <li>Assertions de Dataform: inline y custom.</li>
+  </ul>
+
+  <h2>Conexión con la próxima sesión</h2>
+
+  <p>En el M14 (Looker y Looker Studio) conectaremos un dashboard directamente sobre la vista <code>career_analytics.v_career_path_dashboard</code>. Como la vista ya hace agregación con k-anonimidad, los analistas que consumen el dashboard nunca ven datos individuales: la protección está en la capa de datos, no en permisos del dashboard. Esa es la diferencia entre un dashboard "seguro porque solo lo ven X personas" y un dashboard "seguro por construcción".</p>
+
+  <div class="nav-inline">
+    <a href="#career-events" class="btn-back">Atrás</a>
+    <span></span>
+  </div>
+</section>
+
+</div>
+
+<div class="floating-nav">
+  <a href="#" class="btn-back" id="btnPrev">Atrás</a>
+  <a href="#" class="btn-next" id="btnNext">Siguiente</a>
+</div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+
+<script>
+document.querySelectorAll('.copy-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const codeBlock = btn.closest('.code-block');
+    const code = codeBlock.querySelector('pre code').innerText;
+    navigator.clipboard.writeText(code).then(() => {
+      btn.textContent = 'Copiado ✓';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copiar';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  });
+});
+
+const sections = document.querySelectorAll('section.chapter');
+const tocLinks = document.querySelectorAll('.toc a');
+const totalSections = sections.length;
+let activeIndex = 0;
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.id;
+      const idx = Array.from(sections).findIndex(s => s.id === id);
+      activeIndex = idx;
+      updateActiveLink(id);
+      updateTimeRemaining();
+      updateNavButtons();
+    }
+  });
+}, { rootMargin: '-30% 0px -60% 0px', threshold: 0 });
+
+sections.forEach(section => observer.observe(section));
+
+function updateActiveLink(activeId) {
+  tocLinks.forEach(link => {
+    const target = link.getAttribute('data-target');
+    link.classList.toggle('active', target === activeId);
+  });
+  tocLinks.forEach((link, idx) => {
+    if (idx < activeIndex) link.classList.add('completed');
+    else link.classList.remove('completed');
+  });
+}
+
+function updateTimeRemaining() {
+  let remaining = 0;
+  tocLinks.forEach((link, idx) => {
+    if (idx >= activeIndex) {
+      remaining += parseInt(link.dataset.duration || 0, 10);
+    }
+  });
+  document.getElementById('timeRemaining').textContent = `Quedan ${remaining} minutos`;
+}
+
+function updateNavButtons() {
+  const btnPrev = document.getElementById('btnPrev');
+  const btnNext = document.getElementById('btnNext');
+  if (activeIndex > 0) {
+    btnPrev.classList.remove('disabled');
+    btnPrev.href = '#' + sections[activeIndex - 1].id;
+  } else {
+    btnPrev.classList.add('disabled');
+  }
+  if (activeIndex < totalSections - 1) {
+    btnNext.classList.remove('disabled');
+    btnNext.href = '#' + sections[activeIndex + 1].id;
+  } else {
+    btnNext.classList.add('disabled');
+  }
+}
+
+updateTimeRemaining();
+updateNavButtons();
+
+const menuToggle = document.getElementById('menuToggle');
+const sidebar = document.getElementById('sidebar');
+menuToggle?.addEventListener('click', () => sidebar.classList.toggle('open'));
+tocLinks.forEach(link => {
+  link.addEventListener('click', () => {
+    if (window.innerWidth <= 900) sidebar.classList.remove('open');
+  });
+});
+
+if (typeof Prism !== 'undefined') Prism.highlightAll();
+</script>
+
+</body>
+</html>
+

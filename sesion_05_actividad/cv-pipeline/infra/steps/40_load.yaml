@@ -1,0 +1,10 @@
+  - load:
+      call: http.post
+      args:
+        url: LOADER_URL # TODO: Replace
+        auth:
+          type: OIDC
+        body:
+            bucket: ${extractResponse.body.bucket}
+            file: ${extractResponse.body.file}
+      result: loadResponse

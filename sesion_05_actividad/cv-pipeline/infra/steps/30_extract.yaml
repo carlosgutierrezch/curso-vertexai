@@ -1,0 +1,10 @@
+  - extract:
+      call: http.post
+      args:
+        url: EXTRACTOR_URL # TODO: Replace
+        auth:
+          type: OIDC
+        body:
+            bucket: ${parseResponse.body.bucket}
+            file: ${parseResponse.body.file}
+      result: extractResponse
