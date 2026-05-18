@@ -29,7 +29,6 @@ class ExtractedCV(BaseModel):
     skills: List[str] = []
     ultima_empresa: Optional[str] = None
 
-
 SYSTEM_PROMPT = (
     "Eres un extractor de datos de CVs. Recibes el texto en Markdown de un "
     "currículum y devuelves un JSON con estos campos exactos: nombre, email, "
