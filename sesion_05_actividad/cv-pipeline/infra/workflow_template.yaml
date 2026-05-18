@@ -1,0 +1,19 @@
+main:
+  params: [event]
+  steps:
+  - log_event:
+      call: sys.log
+      args:
+          text: ${event}
+          severity: INFO
+  - extract_bucket_and_file:
+      assign:
+      - bucket: ${event.data.bucket}
+      - file: ${event.data.name}
+  # __PIPELINE_STEPS__
+  - final:
+      return:
+        validate: ${validateResponse.code}
+        parse: ${parseResponse.code}
+        extract: ${extractResponse.code}
+        load: ${loadResponse.code}

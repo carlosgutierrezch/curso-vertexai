@@ -1,0 +1,10 @@
+  - parse:
+      call: http.post
+      args:
+        url: PARSER_URL # TODO: Replace
+        auth:
+          type: OIDC
+        body:
+            bucket: ${bucket}
+            file: ${file}
+      result: parseResponse
